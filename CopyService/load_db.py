@@ -1,3 +1,4 @@
+'''another comment'''
 ''' Load sqlite DB with results of treewalks'''
 import datetime as D
 import socket
