@@ -372,7 +372,8 @@ def copy_original_to_staging(state):
 
 def get_source_acls(source_dir):
     Logger.log_debug("ENTER get_source_acls")
-    json_string = '''{
+    json_string = """
+{
 "acl" : 
 [
 
@@ -383,7 +384,7 @@ def get_source_acls(source_dir):
 "trustee" : 
 {
 "id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1124",
-"name" : "KRAFTESXI\one_admin",
+"name" : "KRAFTESXI\\one_admin",
 "type" : "group"
 }
 },
@@ -395,7 +396,7 @@ def get_source_acls(source_dir):
 "trustee" : 
 {
 "id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1123",
-"name" : "KRAFTESXI\one_ro",
+"name" : "KRAFTESXI\\one_ro",
 "type" : "group"
 }
 },
@@ -407,7 +408,7 @@ def get_source_acls(source_dir):
 "trustee" : 
 {
 "id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1120",
-"name" : "KRAFTESXI\one_rw",
+"name" : "KRAFTESXI\\one_rw",
 "type" : "group"
 }
 }
@@ -427,7 +428,7 @@ def get_source_acls(source_dir):
 "type" : "user"
 }
 }
-'''
+"""
     my_ret = json.loads(json_string)
 
 def async_reacl(source_dir, dest_dir):
