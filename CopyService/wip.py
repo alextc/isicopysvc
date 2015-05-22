@@ -390,7 +390,7 @@ def async_reacl(source_dir, dest_dir):
 def perform_fast_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER perform_fast_reacl")
     my_ret = None
-    my_ret = Process(target=async_reacl, args=([source_dir], [dest_dir]))
+    my_ret = Process(target=async_reacl, args=(source_dir, dest_dir))
     my_ret.start()
     Logger.log_debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
