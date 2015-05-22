@@ -18,6 +18,7 @@ import datetime
 import json
 import glob
 import shutil
+import unicodedata
 import Common.Logging as Logger
 from multiprocessing import Process, Queue
 
@@ -376,7 +377,7 @@ def get_source_acls(source_dir):
 
 def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
-    my_process = Process(target=get_source_acls, args=source_dir)
+    my_process = Process(target=get_source_acls, args=normalized = unicodedata.normalize('NFKD', source_dir).encode('ascii', 'ignore'))
     my_process.start()
     my_process.join()
     Logger.log_debug("EXIT async_reacl")
