@@ -384,7 +384,8 @@ def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
     acls = get_source_acls(dest_dir)
     for each_acl in acls:
-        Logger.log_debug(str((each_acl['acl'])))
+        str_display = each_acl['acl']
+        Logger.log_debug(str_display)
     Logger.log_debug("EXIT async_reacl")
 
 def perform_fast_reacl(source_dir, dest_dir):
