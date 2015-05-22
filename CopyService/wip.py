@@ -332,7 +332,24 @@ def ascyn_fast_copy(source_dir, target_dir):
     Logger.log_debug("ENTER ascyn_fast_copy")
     my_ret = False
 
-    shutil.copytree(source_dir, target_dir)
+    for src_dir, dirs, files in os.walk(source_dir):
+        dst_dir = src_dir.replace(source_dir, target_dir)
+        for dir_ in dirs:
+            dst_dir_ = os.path.join(dst_dir, dir_)
+            if not os.path.exists(dst_dir_):
+                os.mkdir(dst_dir)
+
+        for file_ in files:
+            src_file = os.path.join(src_dir, file_)
+            dst_file = os.path.join(dst_dir, file_)
+            if os.path.exists(dst_file):
+                src_file_stat = os.stat(src_file)
+                dst_file_stat = os.stat(dst_file)
+                if src_file_stat.st_mtime > dst_file_stat.st_mtime:
+                    os.remove(dst_file)
+                    shutil.copy(src_file, dst_dir)
+            else:
+                shutil.copy(src_file, dst_dir)
     my_ret = True
     Logger.log_debug("EXIT ascyn_fast_copy: '" + str(my_ret) + "'")
     return my_ret
