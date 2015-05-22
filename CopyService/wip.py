@@ -371,21 +371,76 @@ def copy_original_to_staging(state):
     return my_ret
 
 def get_source_acls(source_dir):
-    time.sleep(1)
-    Logger.log_debug("THREAD-TEST: " + source_dir)
+    Logger.log_debug("ENTER get_source_acls")
+    json_string = '''{
+"acl" : 
+[
 
+{
+"accessrights" : [ "dir_gen_read", "dir_gen_execute" ],
+"accesstype" : "allow",
+"inherit_flags" : [ "object_inherit", "container_inherit", "inherited_ace" ],
+"trustee" : 
+{
+"id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1124",
+"name" : "KRAFTESXI\\one_admin",
+"type" : "group"
+}
+},
+
+{
+"accessrights" : [ "dir_gen_read", "dir_gen_execute" ],
+"accesstype" : "allow",
+"inherit_flags" : [ "object_inherit", "container_inherit", "inherited_ace" ],
+"trustee" : 
+{
+"id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1123",
+"name" : "KRAFTESXI\\one_ro",
+"type" : "group"
+}
+},
+
+{
+"accessrights" : [ "dir_gen_read", "dir_gen_execute" ],
+"accesstype" : "allow",
+"inherit_flags" : [ "object_inherit", "container_inherit", "inherited_ace" ],
+"trustee" : 
+{
+"id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1120",
+"name" : "KRAFTESXI\\one_rw",
+"type" : "group"
+}
+}
+],
+"authoritative" : "acl",
+"group" : 
+{
+"id" : "GID:0",
+"name" : "wheel",
+"type" : "group"
+},
+"mode" : "0550",
+"owner" : 
+{
+"id" : "UID:0",
+"name" : "root",
+"type" : "user"
+}
+}
+'''
+    my_ret = json.loads(json_string)
 
 def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
-    my_process = Process(target=get_source_acls, args=[source_dir])
-    my_process.start()
-    my_process.join()
+    acls = get_source_acls(dest_dir)
+    for each_acl in acls:
+        Logger.log_debug(str(each_acl))
     Logger.log_debug("EXIT async_reacl")
 
 def perform_fast_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER perform_fast_reacl")
     my_ret = None
-    my_ret = Process(target=async_reacl, args=(source_dir, dest_dir))
+    my_ret = Process(target=async_reacl, args=([source_dir], [dest_dir]))
     my_ret.start()
     Logger.log_debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
