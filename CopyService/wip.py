@@ -197,6 +197,7 @@ def get_stranded_work():
     Logger.log_debug("ENTER get_stranded_work")
     my_ret = None
     potential_strand_targets = glob.glob(potential_work_target_string)
+    potential_strand_targets.sort()
     if potential_strand_targets:
         for each_potential_strand_target in potential_strand_targets:
             if each_potential_strand_target.endswith("_in_process"):
