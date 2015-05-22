@@ -106,10 +106,11 @@ def remove_process_running():
 
 def current_cpu_utilization():
     Logger.log_debug("ENTER current_cpu_utilization")
+    my_ret = 2
     # grab this from os.popen('uptime')
     # TODO:
     Logger.log_debug("EXIT current_cpu_utilization'" + str(my_ret) + "'")
-    return 2
+    return my_ret
 
 def can_do_work():
     Logger.log_debug("ENTER can_do_work")
