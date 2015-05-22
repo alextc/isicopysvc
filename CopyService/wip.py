@@ -369,28 +369,21 @@ def copy_original_to_staging(state):
     Logger.log_debug("EXIT copy_original_to_staging: '" + str(my_ret) + "'")
     return my_ret
 
-def get_source_acls(source_dir, queue):
-    queue.put(1)
+def get_source_acls(source_dir):
+    time.sleep(1)
 
-def async_reacl(source_dir, dest_dir, result_queue):
+
+def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
-    my_queue = Queue()
-    my_process = Process(target=get_source_acls, args=(source_dir, my_queue))
+    my_process = Process(target=get_source_acls, args=(source_dir))
+    my_process.start()
     my_process.join()
-    try:
-        for each_queue_result in my_queue.get():
-            Logger.log_debug(each_queue_result)
-        result_queue.push(True)
-    except Exception as e:
-        Logger.log_exception(e)
-        result_queue.push(0)
-
     Logger.log_debug("EXIT async_reacl")
 
-def perform_fast_reacl(source_dir, dest_dir, my_queue):
+def perform_fast_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER perform_fast_reacl")
     my_ret = None
-    my_ret = Process(target=async_reacl, args=(source_dir, dest_dir, my_queue))
+    my_ret = Process(target=async_reacl, args=(source_dir, dest_dir))
     my_ret.start()
     Logger.log_debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
@@ -400,11 +393,10 @@ def reacl_staging(state):
     my_ret = False
     reacl_in_progress = False
     reacl_process_obj = ""
-    my_queue = Queue()
     while(True):
         perform_heartbeat(state)
         if not reacl_in_progress:
-            reacl_process_obj = perform_fast_reacl(os.path.join(state.target_dir,os.pardir), state.source_dir, my_queue)
+            reacl_process_obj = perform_fast_reacl(os.path.join(state.target_dir,os.pardir), state.source_dir)
             reacl_in_progress = True
         else:
             if process_finished(reacl_process_obj):
