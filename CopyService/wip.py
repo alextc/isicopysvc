@@ -328,11 +328,20 @@ def save_state(state):
         state_file.writelines(state.cur_state)
     Logger.log_debug("EXIT save_state")
 
-def perform_fast_copy(source_dir, target_dir, recursive):
+def ascyn_fast_copy(source_dir, target_dir):
+    Logger.log_debug("ENTER ascyn_fast_copy")
+    my_ret = False
+
+    shutil.copytree(source_dir, target_dir)
+    my_ret = True
+    Logger.log_debug("EXIT ascyn_fast_copy: '" + str(my_ret) + "'")
+    return my_ret
+
+def perform_fast_copy(source_dir, target_dir):
     Logger.log_debug("ENTER perform_fast_copy")
     my_ret = None
-
-    # TODO figure out a spawned copy process to check
+    my_ret = Process(target=ascyn_fast_copy, args=(source_dir,target_dir))
+    my_ret.start()
     Logger.log_debug("EXIT perform_fast_copy: '" + str(my_ret) + "'")
     return my_ret
 
@@ -360,7 +369,7 @@ def copy_original_to_staging(state):
     while(True):
         perform_heartbeat(state)
         if not copy_in_progress:
-            copy_process_obj = perform_fast_copy(state.target_dir, state.source_dir, True)
+            copy_process_obj = perform_fast_copy(state.target_dir, state.source_dir)
             copy_in_progress = True
         else:
             if process_finished(copy_process_obj):
