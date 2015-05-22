@@ -52,7 +52,8 @@ def max_proceses_running():
                         if processes.count < max_proceses:
                             my_ret = True
                 break
-            except:
+            except Exception as e:
+                Logger.log_exception(e)
                 time.sleep(1)
                 retry_count += 1
     Logger.log_debug("EXIT max_proceses_running'" + str(my_ret) + "'")
