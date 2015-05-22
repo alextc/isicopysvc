@@ -56,7 +56,7 @@ def max_proceses_running():
                 time.sleep(1)
                 retry_count += 1
     Logger.log_debug("EXIT max_proceses_running'" + str(my_ret) + "'")
-    return my_return
+    return my_ret
 
 def add_process_running():
     Logger.log_debug("ENTER add_process_running")
@@ -453,6 +453,7 @@ def process_work(state):
             if cleanup_staging(state):
                 print_success(state)
     Logger.log_debug("EXIT process_work")
+
 process_running_added = False
 try:
     if can_do_work():
