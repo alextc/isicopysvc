@@ -351,7 +351,7 @@ def copy_original_to_staging(state):
     copy_in_progress = False
     copy_process_obj = ""
     while(True):
-        perfrom_heartbeat(state)
+        perform_heartbeat(state)
         if not copy_in_progress:
             copy_process_obj = perform_fast_copy(state.target_dir, state.source_dir, True)
             copy_in_progress = True
@@ -379,7 +379,7 @@ def reacl_staging(state):
     reacl_in_progress = False
     reacl_process_obj = ""
     while(True):
-        perfrom_heartbeat(state)
+        perform_heartbeat(state)
         if not reacl_in_progress:
             reacl_process_obj = perform_fast_reacl(os.path.join(state.target_dir,os.pardir), state.source_dir)
             reacl_in_progress = True
@@ -395,7 +395,7 @@ def reacl_staging(state):
 def move_staging(state):
     Logger.log_debug("ENTER move_staging")
     my_ret = False
-    perfrom_heartbeat(state)
+    perform_heartbeat(state)
     if os.path.exists(state.target_dir):
         shutil.move(state.target_dir, state.process_dir + "/old_source_dir")
 
