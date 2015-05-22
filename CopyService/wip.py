@@ -135,6 +135,7 @@ def get_new_work():
     Logger.log_debug("ENTER get_new_work")
     my_ret = ""
     potential_work_targets = glob.glob(potential_work_target_string)
+    potential_work_targets.sort()
     if potential_work_targets:
         for each_potential_work_target in potential_work_targets:
             if not each_potential_work_target.endswith("_in_process"):
@@ -156,6 +157,7 @@ def take_ownership(potential_work_target, ignore_prev_owner):
     while(True):
         try:
             potential_takes = glob.glob(potential_work_target + "_in_process")
+            potential_takes.sort()
             if not potential_takes or ignore_prev_owner :
                if not os.path.exists(expected_path):
                    os.mkdir(expected_path)
