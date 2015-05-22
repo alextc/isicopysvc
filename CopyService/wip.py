@@ -18,6 +18,7 @@ import datetime
 import json
 import glob
 import shutil
+import Common.Logging
 
 max_proceses = 5
 max_cpu_load = 50
@@ -36,7 +37,8 @@ class state_obj:
     state_file = ""
 
 def max_proceses_running():
-    my_return = False
+    log_debug("ENTER max_proceses_running")
+    my_ret = False
     if os.path.isfile(process_file):
         retry_count = 0
         while(True):
@@ -48,15 +50,16 @@ def max_proceses_running():
                     process_info.writelines(str(os.getpid()))
                     if processes:
                         if processes.count < max_proceses:
-                            my_return = True
+                            my_ret = True
                 break
             except:
                 time.sleep(1)
                 retry_count += 1
-        
+    log_debug("EXIT max_proceses_running'" + str(my_ret) + "'")
     return my_return
 
 def add_process_running():
+    log_debug("ENTER add_process_running")
     retry_count = 0
     my_ret = False
     while(True):
@@ -71,9 +74,11 @@ def add_process_running():
         except:
            time.sleep(1)
            retry_count += 1 
+    log_debug("EXIT add_process_running'" + str(my_ret) + "'")
     return my_ret
 
 def remove_process_running():
+    log_debug("ENTER remove_process_running")
     retry_count = 0
     my_ret = False
     while(True):
@@ -97,26 +102,34 @@ def remove_process_running():
         except:
            time.sleep(1)
            retry_count += 1 
+    log_debug("EXIT remove_process_running'" + str(my_ret) + "'")
 
 def current_cpu_utilization():
+    log_debug("ENTER current_cpu_utilization")
     # grab this from os.popen('uptime')
     # TODO:
+    log_debug("EXIT current_cpu_utilization'" + str(my_ret) + "'")
     return 2
 
 def can_do_work():
+    log_debug("ENTER can_do_work")
     my_ret = not max_proceses_running()
     if my_ret:
         my_ret = current_cpu_utilization() < max_cpu_load
+    log_debug("EXIT can_do_work: '" + str(my_ret) + "'")
     return my_ret
 
 def get_work_available():
+    log_debug("ENTER get_work_available")
     my_ret = get_stranded_work()
     if not my_ret:
         my_ret = get_new_work()
 
+    log_debug("EXIT get_work_available: '" + str(my_ret) + "'")
     return my_ret
 
 def get_new_work():
+    log_debug("ENTER get_new_work")
     my_ret = ""
     potential_work_targets = glob.glob(potential_work_target_string)
     if potential_work_targets:
@@ -124,25 +137,30 @@ def get_new_work():
             if not each_potential_work_target.endswith("_in_process"):
                 my_ret = take_ownership(each_potential_work_target, False)
                 break
+    log_debug("EXIT get_new_work: '" + str(my_ret) + "'")
     return my_ret
 
 def take_ownership(potential_work_target, ignore_prev_owner):
-    my_ret = ""
+    log_debug("ENTER take_ownership")
+    my_ret = None
     retry_count = 0
     expected_path = get_ownership_path(potential_work_target)
     expected_hb_file = expected_path + "/hb.dat"
     expected_state_file = expected_path + "/state.dat"
-    expected_source_path = expected_path + "/source.dat"
+    expected_source_file = expected_path + "/source.dat"
+    expected_owner_file = expected_path + "/owner_data.dat"
     while(True):
         try:
             potential_takes = glob.glob(potential_work_target + "*_in_process")
             if not potential_takes or ignore_prev_owner :
                os.mkdir(expected_path)
+               with open(expected_owner_file, 'w+') as owner_file:
+                   owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
                with open(expected_hb_file,'w+') as hb_file:
                    hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
                with open(expected_state_file, 'w+') as state_file:
                    hb_file.writelines("Init")
-               with open(expected_source_path, 'w+') as source_file:
+               with open(expected_source_file, 'w+') as source_file:
                     source_file.writelines(potential_work_target)
                my_ret = state_obj()
                my_ret.state = "Init"
@@ -160,14 +178,18 @@ def take_ownership(potential_work_target, ignore_prev_owner):
                 time.sleep(1)
                 retry_count += 1
                 
-
+    log_debug("EXIT take_ownership: '" + str(my_ret) + "'")
     return my_ret
 
 def get_target_from_source(source_dir):
+    log_debug("ENTER get_target_from_source")
     my_ret = source_dir.replace("staging","from")
+    log_debug("EXIT get_target_from_source: '" + str(my_ret) + "'")
+    return my_ret
 
 def get_stranded_work():
-    my_ret = ""
+    log_debug("ENTER get_stranded_work")
+    my_ret = None
     potential_strand_targets = glob.glob(potential_work_target_string)
     if potential_strand_targets:
         for each_potential_strand_target in potential_strand_targets:
@@ -178,18 +200,21 @@ def get_stranded_work():
                         my_ret.state = get_state(each_potential_strand_target)
                         shutil.rmtree(each_potential_strand_target)
                         break
+    log_debug("EXIT get_stranded_work: '" + str(my_ret) + "'")
     return my_ret
 
 def get_original_source(ownership_path):
+    log_debug("ENTER get_original_source")
     my_ret = ""
     original_source = ownership_path + "/source.dat"
     if os.path.exists(original_source):
         with open(original_source) as orig_source:
             my_ret = orig_source.readline().strip()
-    
+    log_debug("EXIT get_original_source: '" + str(my_ret) + "'")
     return my_ret
 
 def stale_heartbeat(ownership_path):
+    log_debug("ENTER stale_heartbeat")
     my_ret = True
     hbFile = ownership_path + "/hb.dat"
     with open(hbFile) as last_heartbeat:
@@ -198,17 +223,22 @@ def stale_heartbeat(ownership_path):
             last_hb_datetime = datetime.datetime.strptime(persistence_string, datetime_format_string)
             if (datetime.datetime.utcnow() - last_hb_datetime).Seconds < max_stale_hb_time_in_seconds:
                 my_ret = False
+    log_debug("EXIT stale_heartbeat: '" + str(my_ret) + "'")
     return my_ret
 
 def get_state(ownership_path):
+    log_debug("ENTER get_state")
     my_ret = ""
     state_file_name = ownership_path + "/state.dat"
     with open(state_file_name) as state_file:
         my_ret = state_file.readline()
+    log_debug("EXIT get_state: '" + str(my_ret) + "'")
     return my_ret
 
 def get_ownership_path(path):
-    my_ret = path + "_" + socket.gethostname() + "_" + str(os.getpid()) + "_in_process"
+    log_debug("ENTER get_ownership_path")
+    my_ret = path + "_in_process"
+    log_debug("EXIT get_ownership_path: '" + str(my_ret) + "'")
     return my_ret
 
 def look_for_folders():
@@ -252,51 +282,64 @@ def get_isi_job_status():
     return statuses
 
 def spawn_new_woker(should_wait):
+    log_debug("ENTER spawn_new_woker")
     if should_wait:
         os.spawnl(os.P_WAIT, "python", "my script path")
     else:
-        os.spawnl(os.P_NOWAIT,"python", "my script path")       
+        os.spawnl(os.P_NOWAIT,"python", "my script path")
+    log_debug("EXIT spawn_new_woker")
 
 def perform_heartbeat(state):
+    log_debug("ENTER perform_heartbeat")
     with open(state.hb_file,'w+') as state_file:
         fcntl.flock(state_file, fcntl.LOCK_EX)
         hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
-
+    log_debug("EXIT perform_heartbeat")
 
 
 def needs_copy(state):
+    log_debug("ENTER needs_copy")
     my_ret = False
     perform_heartbeat(state)
     if os.path.exists(state.target_dir):
         my_ret = True
 
+    log_debug("EXIT needs_copy: '" + str(my_ret) + "'")
     return my_ret
 
 def save_state(state):
+    log_debug("ENTER save_state")
     perform_heartbeat(state)
     with open(state.state_file,'w+') as state_file:
         state_file.writelines(state.cur_state)
+    log_debug("EXIT save_state")
 
 def perform_fast_copy(source_dir, target_dir, recursive):
-    my_ret = ""
+    log_debug("ENTER perform_fast_copy")
+    my_ret = None
 
     # TODO figure out a spawned copy process to check
+    log_debug("EXIT perform_fast_copy: '" + str(my_ret) + "'")
     return my_ret
 
 def process_finished(process_obj):
+    log_debug("ENTER process_finished")
     my_ret = True
     if process_obj:
        my_ret = process_obj.HasExited()
+    log_debug("EXIT process_finished: '" + str(my_ret) + "'")
     return my_ret
 
 def check_process_result(process_obj):
+    log_debug("ENTER check_process_result")
     my_ret = False
     if process_obj:
         my_ret = (process_obj.ExitCode == 0)
-
+    log_debug("EXIT check_process_result: '" + str(my_ret) + "'")
     return my_ret
 
 def copy_original_to_staging(state):
+    log_debug("ENTER copy_original_to_staging")
     my_ret = False
     copy_in_progress = False
     copy_process_obj = ""
@@ -311,16 +354,20 @@ def copy_original_to_staging(state):
         time.sleep(1)
 
     my_ret = check_process_result(copy_process_obj)
+    log_debug("EXIT copy_original_to_staging: '" + str(my_ret) + "'")
     return my_ret
 
 def perform_fast_reacl(source_dir, dest_dir):
-    my_ret = ""
+    log_debug("ENTER perform_fast_reacl")
+    my_ret = None
 
     #TODO find out some super cool reacl thingy
+    log_debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
 
 
 def reacl_staging(state):
+    log_debug("ENTER reacl_staging")
     my_ret = False
     reacl_in_progress = False
     reacl_process_obj = ""
@@ -335,9 +382,11 @@ def reacl_staging(state):
         time.sleep(1)
 
     my_ret = check_process_result(reacl_process_obj)
+    log_debug("EXIT reacl_staging: '" + str(my_ret) + "'")
     return my_ret
 
 def move_staging(state):
+    log_debug("ENTER move_staging")
     my_ret = False
     perfrom_heartbeat(state)
     if os.path.exists(state.target_dir):
@@ -345,15 +394,19 @@ def move_staging(state):
 
     shutil.move(state.source_dir, state.target_dir)
     my_ret = True
+    log_debug("EXIT move_staging: '" + str(my_ret) + "'")
     return my_ret
 
 def perform_fast_rmdir(source_dir):
+    log_debug("ENTER perform_fast_rmdir")
     my_ret = False
 
     #TODO find a way to do fast cleanup
+    log_debug("EXIT perform_fast_rmdir: '" + str(my_ret) + "'")
     return my_ret
 
 def cleanup_staging(state):
+    log_debug("ENTER cleanup_staging")
     my_ret = False
     cleanup_in_progress = False
     cleanup_process_obj = ""
@@ -367,9 +420,11 @@ def cleanup_staging(state):
         time.sleep(1)
 
     my_ret = check_process_result(cleanup_process_obj)
+    log_debug("EXIT cleanup_staging: '" + str(my_ret) + "'")
     return my_ret
 
 def process_work(state):
+    log_debug("ENTER process_work")
     while(True):
         if state.cur_state == "Init":
             if needs_copy(state):
@@ -397,17 +452,21 @@ def process_work(state):
         if state.cur_state == "Cleanup":
             if cleanup_staging(state):
                 print_success(state)
-    
+    log_debug("EXIT process_work")
+process_running_added = False
 try:
     if can_do_work():
-        if add_process_running():
-            try:
-                my_work = get_work_available()
-                if my_work:
-                   perform_heartbeat(my_work)
-                   spawn_new_worker(False)
-                   process_work(my_work)
-            finally:
-                remove_process_running()
-except:
+        process_running_added = add_process_running()
+        if process_running_added:
+            my_work = get_work_available()
+            if my_work:
+                perform_heartbeat(my_work)
+                spawn_new_worker(False)
+                process_work(my_work)
+           
+except Exception as e:
+    log_exception(e)
     spawn_new_worker(True)
+finally:
+     if process_running_added:
+        remove_process_running()

@@ -26,15 +26,25 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Common\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="db_delete_triggered.py" />
     <Compile Include="db_load_access.py" />
     <Compile Include="db_query_last_seen.py" />
     <Compile Include="grab_openfiles.py" />
     <Compile Include="load_db.py" />
+    <Compile Include="Common\Logging.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="v1.py" />
+    <Compile Include="wip.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\2.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Common\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
