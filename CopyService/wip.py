@@ -465,7 +465,7 @@ try:
                 process_work(my_work)
            
 except Exception as e:
-    log_exception(e)
+    Logger.log_exception(e)
     spawn_new_worker(True)
 finally:
      if process_running_added:
