@@ -1,9 +1,8 @@
+''' adding a comment here'''
 import glob
-import unicodedata
 import os
 import sqlite3
 import optparse
-import shutil
 import isi.rest
 import json
 import sys
@@ -12,8 +11,8 @@ import re
 import errno
 
 
-trigger_interval_in_seconds = 60
 persistence_file = "/ifs/copy_svc/persistence.file"
+trigger_interval_in_seconds = 300
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 database = "/ifs/copy_svc/openfiles.db"
 copy_svc_paths = glob.glob("/ifs/zones/*/copy_svc/to/*/*")
@@ -84,7 +83,8 @@ def drop_table():
     except sqlite3.Error as e:
         print e.args[0]
 
-def update_database(path, date, action):
+def update_database(path, date):
+    print "in update_database loop"
     conn = sqlite3.connect(database)
     c = conn.cursor()
     c.execute('''CREATE TABLE if not exists openfiles
@@ -92,17 +92,7 @@ def update_database(path, date, action):
               last_seen INT NOT NULL)''')
     conn.commit()
     sql_insert_query = 'INSERT or REPLACE into openfiles (directory,last_seen) VALUES (?,?)'
-    if action:
-        sql_insert_query = 'INSERT or IGNORE into openfiles (directory,last_seen) VALUES (?,?)'
     c.execute(sql_insert_query, (path, date))
-    conn.commit()
-    conn.close()
-
-def delete_entry_from_database(path):
-    conn = sqlite3.connect(database)
-    c = conn.cursor()
-    sql_delete_query = "DELETE from openfiles WHERE directory = '" + path + "'"
-    c.execute(sql_delete_query)
     conn.commit()
     conn.close()
 
@@ -137,16 +127,11 @@ def process_persistence_file():
                     for each_interesting in copy_svc_paths:
                         print each_interesting
                         if openfile['file'].startswith(each_interesting):
-                            update_database(each_interesting, persistence_date, False)
+                            update_database(each_interesting, persistence_date)
                             copy_svc_paths.remove(each_interesting)
                             break
                     if not copy_svc_paths:
                         break
-            if copy_svc_paths:
-              for each_interesting in copy_svc_paths:
-                  update_database(each_interesting, persistence_date, True)
-                             
- 
 
 
 def delete_persistence_file():
@@ -159,7 +144,7 @@ def delete_persistence_file():
 def fill_persistence_file():
     try:
         open_files = grab_openfiles() 
-        right_now = datetime.datetime.utcnow()
+        right_now = datetime.datetime.now()
         if open_files:
             with open(persistence_file, 'w') as persistence:
                 persistence.writelines(right_now.strftime(datetime_format_string))
@@ -169,66 +154,35 @@ def fill_persistence_file():
         print e
 
 def get_triggered_file():
-    conn = sqlite3.connect(database)
-    c = conn.cursor()
-    sql_grab_diffs_query = "select * from openfiles where (strftime('%s', 'now') - strftime('%s', last_seen)) > " + str(trigger_interval_in_seconds)
-    print sql_grab_diffs_query
-    c.execute(sql_grab_diffs_query)
-    return c.fetchall()
-    conn.close()
-     
-
-def work_on_triggered_dirs(triggered_dirs):
-    for each_triggered_dir in triggered_dirs:
-        dir_to_move = each_triggered_dir[0].split(':')[1].replace("\\", "/")
-        dir_parts = dir_to_move.split('/')
-        print dir_parts
-        target_dir = "/" + dir_parts[1] + "/" + dir_parts[2] + "/" + dir_parts[6] + "/copy_svc/staging/" + dir_parts[3] + "/" + dir_parts[7]
-        parent_target_dir = "/" + dir_parts[1] + "/" + dir_parts[2] + "/" + dir_parts[6] + "/copy_svc/staging/" + dir_parts[3] 
-        if not os.path.exists(parent_target_dir):
-            print parent_target_dir
-            os.mkdir(parent_target_dir)
-        if os.path.exists(dir_to_move):
-            shutil.move(dir_to_move, target_dir)
-        normalized = unicodedata.normalize('NFKD', each_triggered_dir[0]).encode('ascii', 'ignore')
-        print type(normalized)
-        print normalized
-
-        delete_entry_from_database(normalized)
-        
-
-def restart_script():
     pass
 
-try:
+def work_on_triggered_dirs():
+    pass
 
 
-    options = process_command_line()
-    debug   = options.debug
-    verbose = options.verbose
 
-    if debug:
-        print vars(options)
 
-    copy_svc_paths = flip_slashes()
+options = process_command_line()
+debug   = options.debug
+verbose = options.verbose
 
-    if not copy_svc_paths:
-        drop_table()
-        delete_persistence_file()
-        sys.exit("No work to do.")
+if debug:
+    print vars(options)
 
-    if not os.path.isfile(persistence_file):
-        fill_persistence_file()
+copy_svc_paths = flip_slashes()
 
-    process_persistence_file()
-
+if not copy_svc_paths:
+    drop_table()
     delete_persistence_file()
+    sys.exit("No work to do.")
 
-    triggered_dirs = get_triggered_file()
+if not os.path.isfile(persistence_file):
+    fill_persistence_file()
 
-    if triggered_dirs:
-        work_on_triggered_dirs(triggered_dirs)
+process_persistence_file()
 
+delete_persistence_file()
 
-finally:
-    restart_script()    
+get_triggered_file()
+
+work_on_triggered_dirs()
