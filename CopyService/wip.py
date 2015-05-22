@@ -222,7 +222,7 @@ def stale_heartbeat(ownership_path):
         last_hb_time = last_heartbeat.readline().strip()
         if last_hb_time:
             last_hb_datetime = datetime.datetime.strptime(last_hb_time, datetime_format_string)
-            if (datetime.datetime.utcnow() - last_hb_datetime).Seconds < max_stale_hb_time_in_seconds:
+            if (datetime.datetime.utcnow() - last_hb_datetime).seconds < max_stale_hb_time_in_seconds:
                 my_ret = False
     Logger.log_debug("EXIT stale_heartbeat: '" + str(my_ret) + "'")
     return my_ret
