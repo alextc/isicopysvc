@@ -48,7 +48,7 @@ def grab_smbopenfiles():
 
 def grab_aclfromobj(obj_path):
     url_parts = ['namespace'] + obj_path.split("/")
-    query_dict = {'Acl':''}
+    query_dict = {'acl':''}
     # NOTE:  Although definition for papi_action gives us whole tuple from GET, 
     # here we only put to use the third element (aka [2]) of the tuple which has everything we need
     return ran_action('GET', url_parts)[2]
