@@ -397,11 +397,11 @@ def async_reacl(source_dir, dest_dir):
     for root, dirs, files in os.walk(dest_dir, topdown=False):
         for name in files:
             result = set_dest_acls(os.path.join(root, name), acls)
-            if not result:
+            if result:
                 error_hit = True
         for name in dirs:
             result = set_dest_acls(os.path.join(root, name), acls)
-            if not result:
+            if result:
                 error_hit = True
     
     if not error_hit:
