@@ -46,7 +46,7 @@ def max_proceses_running():
                 break
             try:
                 with open(process_file) as process_info:
-                    fcntl.flock(process_info.fileno().fileno(), fcntl.LOCK_EX)
+                    fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
                     process_info.writelines(str(os.getpid()))
                     if processes:
                         if processes.count < max_proceses:
