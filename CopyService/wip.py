@@ -299,7 +299,7 @@ def perform_heartbeat(state):
     with open(state.hb_file,'w+') as hb_file:
         fcntl.flock(hb_file.fileno(), fcntl.LOCK_EX)
         cur_hb_time_str = datetime.datetime.utcnow().strftime(datetime_format_string)
-        log_debug("Current HB time: '" + cur_hb_time_str + "'")
+        Logger.log_debug("Current HB time: '" + cur_hb_time_str + "'")
         hb_file.writelines(cur_hb_time_str)
     Logger.log_debug("EXIT perform_heartbeat")
 
