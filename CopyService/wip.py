@@ -283,13 +283,16 @@ def get_isi_job_status():
     # isi job events list --job-id 170 | grep Succeeded
     return statuses
 
-def spawn_new_woker(should_wait):
-    Logger.log_debug("ENTER spawn_new_woker")
+def spawn_new_worker(should_wait):
+    Logger.log_debug("ENTER spawn_new_worker")
     if should_wait:
-        os.spawnl(os.P_WAIT, "python", "my script path")
+        #os.spawnl(os.P_WAIT, "python", "my script path")
+        Logger.log_debug("spawning new instance of script and waiting")
     else:
-        os.spawnl(os.P_NOWAIT,"python", "my script path")
-    Logger.log_debug("EXIT spawn_new_woker")
+        #os.spawnl(os.P_NOWAIT,"python", "my script path")
+        Logger.log_debug("spawning new instance of script and not waiting")
+
+    Logger.log_debug("EXIT spawn_new_worker")
 
 def perform_heartbeat(state):
     Logger.log_debug("ENTER perform_heartbeat")
