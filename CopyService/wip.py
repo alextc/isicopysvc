@@ -527,7 +527,7 @@ def cleanup_staging(state):
     cleanup_process_obj = ""
     while(True):
         if not cleanup_in_progress:
-            cleanup_process_obj = perform_fast_rmdir(state.source_dir)
+            cleanup_process_obj = perform_fast_rmdir(state.process_dir)
             cleanup_in_progress = True
         else:
             if process_finished(cleanup_process_obj):
