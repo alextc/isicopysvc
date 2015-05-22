@@ -471,8 +471,8 @@ def move_staging(state):
     if os.path.exists(state.target_dir):
         shutil.move(state.target_dir, state.process_dir + "/old_source_dir")
 
-    shutil.move(state.source_dir, state.target_dir)
-    my_ret = True
+    #shutil.move(state.source_dir, state.target_dir)
+    #my_ret = True
     Logger.log_debug("EXIT move_staging: '" + str(my_ret) + "'")
     return my_ret
 
