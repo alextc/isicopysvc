@@ -2,9 +2,9 @@ import isi.rest
 import json
 
 def protocol_action(type, action, url_parts, query_dict={}, header_dict={}, body_data='', timeout=120):
-    socket_type = isi.rest.PAPI_SOCKET_PATH,
+    socket_type = isi.rest.PAPI_SOCKET_PATH
     if type == "RAN":
-        socket_type = isi.rest.OAPI_SOCKET_PATH,
+        socket_type = isi.rest.OAPI_SOCKET_PATH
 
     response = isi.rest.send_rest_request(
         socket_path = socket_type,
