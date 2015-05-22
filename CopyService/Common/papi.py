@@ -28,13 +28,13 @@ def papi_action(action, url_parts, query_dict={}, header_dict={}, body_data='', 
         )
     return response
 
-def ran_action(action, url_parts, query_dict={}, header_dict={}, body_data='', timeout=120):
+def ran_action(action, url_parts, query_dict={}, body_data='', timeout=120):
     return protocol_action(
             "RAN",
             action,
             url_parts,
             query_dict,
-            {'Content-type':'application/jsaon', 'SCRIPT_NAME':'/namespace'},
+            {'Content-type':'application/json', 'SCRIPT_NAME':'/namespace'},
             body_data,
             timeout
         )
@@ -57,5 +57,5 @@ def set_aclonobj(obj_path, acl):
     url_parts = ['namespace'] + obj_path.split("/")
     query_dict = {'acl':''}
     body = json.dumps(acl)
-    return ran_action('PUT', url_parts, query_dict, {}, body)[2]
+    return ran_action('PUT', url_parts, query_dict, body)[2]
 
