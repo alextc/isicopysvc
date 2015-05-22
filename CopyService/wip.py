@@ -337,7 +337,7 @@ def ascyn_fast_copy(source_dir, target_dir):
         for dir_ in dirs:
             dst_dir_ = os.path.join(dst_dir, dir_)
             if not os.path.exists(dst_dir_):
-                os.mkdir(dst_dir)
+                os.mkdir(dst_dir_)
 
         for file_ in files:
             src_file = os.path.join(src_dir, file_)
