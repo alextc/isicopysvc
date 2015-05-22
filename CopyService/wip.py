@@ -152,9 +152,10 @@ def take_ownership(potential_work_target, ignore_prev_owner):
     expected_owner_file = expected_path + "/owner_data.dat"
     while(True):
         try:
-            potential_takes = glob.glob(potential_work_target + "*_in_process")
+            potential_takes = glob.glob(potential_work_target + "_in_process")
             if not potential_takes or ignore_prev_owner :
-               os.mkdir(expected_path)
+               if not os.path.exists(expected_path):
+                   os.mkdir(expected_path)
                with open(expected_owner_file, 'w+') as owner_file:
                    owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
                with open(expected_hb_file,'w+') as hb_file:
