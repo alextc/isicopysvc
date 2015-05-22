@@ -371,11 +371,12 @@ def copy_original_to_staging(state):
 
 def get_source_acls(source_dir):
     time.sleep(1)
+    Logger.log_debug("THREAD-TEST: " + source_dir)
 
 
 def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
-    my_process = Process(target=get_source_acls, args=(source_dir))
+    my_process = Process(target=get_source_acls, args=source_dir)
     my_process.start()
     my_process.join()
     Logger.log_debug("EXIT async_reacl")
