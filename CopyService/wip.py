@@ -439,15 +439,41 @@ def reacl_staging(state):
     Logger.log_debug("EXIT reacl_staging: '" + str(my_ret) + "'")
     return my_ret
 
-def move_staging(state):
-    Logger.log_debug("ENTER move_staging")
+def async_move(state):
+    Logger.log_debug("ENTER async_move")
     my_ret = False
-    perform_heartbeat(state)
     if os.path.exists(state.target_dir):
         shutil.move(state.target_dir, state.process_dir + "/old_source_dir")
 
-    #shutil.move(state.source_dir, state.target_dir)
-    #my_ret = True
+    shutil.move(state.source_dir, state.target_dir)
+    my_ret = True
+    Logger.log_debug("EXIT async_move: '" + str(my_ret) + "'")
+    return my_ret
+
+def perform_fast_move(state):
+    Logger.log_debug("ENTER perform_fast_move")
+    my_ret = None
+    my_ret = Process(target=async_move, args=state)
+    my_ret.start()
+    Logger.log_debug("EXIT perform_fast_move: '" + str(my_ret) + "'")
+    return my_ret
+
+def move_staging(state):
+    Logger.log_debug("ENTER move_staging")
+    my_ret = False
+    move_in_progress = False
+    move_process_obj = ""
+    while(True):
+        perform_heartbeat(state)
+        if not move_in_progress:
+            move_process_obj = perform_fast_move(state)
+            move_in_progress = True
+        else:
+            if process_finished(move_process_obj):
+                break
+        time.sleep(1)
+
+    my_ret = check_process_result(move_process_obj)
     Logger.log_debug("EXIT move_staging: '" + str(my_ret) + "'")
     return my_ret
 
