@@ -200,7 +200,7 @@ def get_stranded_work():
                 if stale_heartbeat(each_potential_strand_target):
                     my_ret = take_ownership(get_original_source(each_potential_strand_target), True)
                     if my_ret:
-                        my_ret.state = get_state(each_potential_strand_target)
+                        my_ret.cur_state = get_state(each_potential_strand_target)
                         break
     Logger.log_debug("EXIT get_stranded_work: '" + str(my_ret) + "'")
     return my_ret
