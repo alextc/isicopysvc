@@ -391,8 +391,8 @@ def async_reacl(source_dir, dest_dir):
     Logger.log_debug(source_dir)
     Logger.log_debug(dest_dir)
 
-    acls = get_source_acls(dest_dir)
-    result = set_dest_acls(source_dir, acls)
+    acls = get_source_acls(source_dir)
+    result = set_dest_acls(dest_dir, acls)
     Logger.log_debug(str(result))
     Logger.log_debug("EXIT async_reacl")
 
