@@ -430,7 +430,7 @@ def get_source_acls(source_dir):
 }
 """
     my_ret = json.loads(json_string)
-    return my_ret.acls
+    return my_ret['acl']
 
 def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
