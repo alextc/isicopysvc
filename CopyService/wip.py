@@ -46,7 +46,7 @@ def max_proceses_running():
                 break
             try:
                 with open(process_file) as process_info:
-                    fcntl.flock(process_info, fcntl.LOCK_EX)
+                    fcntl.flock(process_info.fileno().fileno(), fcntl.LOCK_EX)
                     process_info.writelines(str(os.getpid()))
                     if processes:
                         if processes.count < max_proceses:
@@ -68,7 +68,7 @@ def add_process_running():
             break
         try:
             with open(process_file, 'w+') as process_info:
-                fcntl.flock(process_info, fcntl.LOCK_EX)
+                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
                 process_info.writelines(str(os.getpid()))
                 my_ret = True
             break
@@ -88,7 +88,7 @@ def remove_process_running():
         try:
             lines = []
             with open(process_file, 'r') as process_info:
-                fcntl.flock(process_info, fcntl.LOCK_EX)
+                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
                 lines = process_info.readlines()
             if lines:
                 with open(process_file,'w') as process_info:
