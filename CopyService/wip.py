@@ -257,39 +257,6 @@ def look_for_folders():
     pass
     return object, step
 
-def is_copy(folder):
-    pass
-
-def is_dir_in_progress(folder):
-    # folder exists
-    pass
-
-def claim_move_dir_job(folder):
-    pass
-
-def claim_copy_dir_job(folder):
-    pass
-
-def start_ACL_repair_job(folder):
-    pass
-    return job_id
-
-def set_ACL_repair_job_id(folder, job_id):
-    pass
-
-def start_copy_job(folder):
-    pass
-
-def get_ACL_job_in_progress():
-    # select where acl_jobid not null and is completed is false
-    pass
-
-def get_isi_job_status():
-    pass
-    # statuses is list with tuples each with job_id, Succeeded
-    # isi job events list --job-id 170 | grep Succeeded
-    return statuses
-
 def spawn_new_worker(should_wait):
     Logger.log_debug("ENTER spawn_new_worker")
     if should_wait:
@@ -420,6 +387,10 @@ def async_reacl(source_dir, dest_dir):
     error_hit = False
 
     acls = get_source_acls(source_dir)
+    result = set_dest_acls(dest_dir, acls)
+    if result:
+        error_hit = True
+
     for root, dirs, files in os.walk(dest_dir, topdown=False):
         for name in files:
             result = set_dest_acls(os.path.join(root, name), acls)
