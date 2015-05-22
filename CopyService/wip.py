@@ -19,6 +19,7 @@ import json
 import glob
 import shutil
 import Common.Logging as Logger
+from multiprocessing import Process, Queue
 
 max_proceses = 5
 max_cpu_load = 50
@@ -336,8 +337,8 @@ def perform_fast_copy(source_dir, target_dir, recursive):
 def process_finished(process_obj):
     Logger.log_debug("ENTER process_finished")
     my_ret = True
-    if process_obj:
-       my_ret = process_obj.HasExited()
+    if not process_obj.is_alive():
+       my_ret = (process_obj.exitcode == 0)
     Logger.log_debug("EXIT process_finished: '" + str(my_ret) + "'")
     return my_ret
 
@@ -368,24 +369,42 @@ def copy_original_to_staging(state):
     Logger.log_debug("EXIT copy_original_to_staging: '" + str(my_ret) + "'")
     return my_ret
 
-def perform_fast_reacl(source_dir, dest_dir):
+def get_source_acls(source_dir, queue):
+    queue.put(1)
+
+def async_reacl(source_dir, dest_dir, result_queue):
+    Logger.log_debug("ENTER async_reacl")
+    my_queue = Queue()
+    my_process = Process(target=get_source_acls, args=(source_dir, my_queue))
+    my_process.join()
+    try:
+        for each_queue_result in my_queue.get():
+            Logger.log_debug(each_queue_result)
+        result_queue.push(True)
+    except Exception as e:
+        Logger.log_exception(e)
+        result_queue.push(0)
+
+    Logger.log_debug("EXIT async_reacl")
+
+def perform_fast_reacl(source_dir, dest_dir, my_queue):
     Logger.log_debug("ENTER perform_fast_reacl")
     my_ret = None
-
-    #TODO find out some super cool reacl thingy
+    my_ret = Process(target=async_reacl, args=(source_dir, dest_dir, my_queue))
+    my_ret.start()
     Logger.log_debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
-
 
 def reacl_staging(state):
     Logger.log_debug("ENTER reacl_staging")
     my_ret = False
     reacl_in_progress = False
     reacl_process_obj = ""
+    my_queue = Queue()
     while(True):
         perform_heartbeat(state)
         if not reacl_in_progress:
-            reacl_process_obj = perform_fast_reacl(os.path.join(state.target_dir,os.pardir), state.source_dir)
+            reacl_process_obj = perform_fast_reacl(os.path.join(state.target_dir,os.pardir), state.source_dir, my_queue)
             reacl_in_progress = True
         else:
             if process_finished(reacl_process_obj):
@@ -413,6 +432,9 @@ def perform_fast_rmdir(source_dir):
     my_ret = False
 
     #TODO find a way to do fast cleanup
+
+    #shutil.remtree(source_dir);
+
     Logger.log_debug("EXIT perform_fast_rmdir: '" + str(my_ret) + "'")
     return my_ret
 
