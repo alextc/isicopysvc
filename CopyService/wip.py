@@ -298,7 +298,9 @@ def perform_heartbeat(state):
     Logger.log_debug("ENTER perform_heartbeat")
     with open(state.hb_file,'w+') as hb_file:
         fcntl.flock(hb_file.fileno(), fcntl.LOCK_EX)
-        hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
+        cur_hb_time_str = datetime.datetime.utcnow().strftime(datetime_format_string)
+        log_debug("Current HB time: '" + cur_hb_time_str + "'")
+        hb_file.writelines(cur_hb_time_str)
     Logger.log_debug("EXIT perform_heartbeat")
 
 
@@ -438,6 +440,9 @@ def process_work(state):
                 if copy_original_to_staging(state):
                     state.cur_state = "ReAcl"
                     save_state(state)
+            else:
+                state.cur_state = "ReAcl"
+                save_state(state)
         
         if state.cur_state == "CopyOrig":
             if copy_original_to_staging(state):
@@ -457,6 +462,8 @@ def process_work(state):
         if state.cur_state == "Cleanup":
             if cleanup_staging(state):
                 print_success(state)
+
+        break
     Logger.log_debug("EXIT process_work")
 
 process_running_added = False
