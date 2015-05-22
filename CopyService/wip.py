@@ -337,8 +337,8 @@ def perform_fast_copy(source_dir, target_dir, recursive):
 def process_finished(process_obj):
     Logger.log_debug("ENTER process_finished")
     my_ret = True
-    if not process_obj.is_alive():
-       my_ret = (process_obj.exitcode == 0)
+    if process_obj.is_alive():
+       my_ret = False
     Logger.log_debug("EXIT process_finished: '" + str(my_ret) + "'")
     return my_ret
 
@@ -346,7 +346,7 @@ def check_process_result(process_obj):
     Logger.log_debug("ENTER check_process_result")
     my_ret = False
     if process_obj:
-        my_ret = (process_obj.ExitCode == 0)
+        my_ret = (process_obj.exitcode == 0)
     Logger.log_debug("EXIT check_process_result: '" + str(my_ret) + "'")
     return my_ret
 
