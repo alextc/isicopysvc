@@ -250,20 +250,17 @@ def get_ownership_path(path):
     Logger.log_debug("EXIT get_ownership_path: '" + str(my_ret) + "'")
     return my_ret
 
-def look_for_folders():
-    # am i not resource constrainded
-    # am i not performing max concurrent work
-    # is work available
-    pass
-    return object, step
+def launch_script(script_path):
+    os.system("python '" + script_path + "'")
 
 def spawn_new_worker(should_wait):
     Logger.log_debug("ENTER spawn_new_worker")
+    process_obj = Process(target=launch_script, args=(os.path.realpath(__file__),))
+    process_obj.run()
     if should_wait:
-        #os.spawnl(os.P_WAIT, "python", "my script path")
         Logger.log_debug("spawning new instance of script and waiting")
+        process_obj.join()
     else:
-        #os.spawnl(os.P_NOWAIT,"python", "my script path")
         Logger.log_debug("spawning new instance of script and not waiting")
 
     Logger.log_debug("EXIT spawn_new_worker")
