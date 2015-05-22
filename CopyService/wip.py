@@ -396,15 +396,17 @@ def async_reacl(source_dir, dest_dir):
     acls = get_source_acls(source_dir)
     for root, dirs, files in os.walk(dest_dir, topdown=False):
         for name in files:
-            result = set_dest_acls(os.path.join(root, name), acl)
+            result = set_dest_acls(os.path.join(root, name), acls)
             if not result:
                 error_hit = True
         for name in dirs:
-            result = set_dest_acls(os.path.join(root, name), acl)
+            result = set_dest_acls(os.path.join(root, name), acls)
             if not result:
                 error_hit = True
     
-    Logger.log_debug(str(result))
+    if not error_hit:
+        my_ret = True
+
     Logger.log_debug("EXIT async_reacl: '" + str(my_ret) + "'")
     return my_ret
 
