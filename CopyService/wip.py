@@ -160,7 +160,7 @@ def take_ownership(potential_work_target, ignore_prev_owner):
                with open(expected_hb_file,'w+') as hb_file:
                    hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
                with open(expected_state_file, 'w+') as state_file:
-                   hb_file.writelines("Init")
+                   state_file.writelines("Init")
                with open(expected_source_file, 'w+') as source_file:
                     source_file.writelines(potential_work_target)
                my_ret = state_obj()
@@ -172,7 +172,8 @@ def take_ownership(potential_work_target, ignore_prev_owner):
                my_ret.state_file = expected_state_file
 
             break
-        except:
+        except Exception as e:
+            Logger.log_exception(e)
             if retry_count > 5:
                 break
             else:
