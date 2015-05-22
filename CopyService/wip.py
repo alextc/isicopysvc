@@ -390,11 +390,23 @@ def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
     Logger.log_debug(source_dir)
     Logger.log_debug(dest_dir)
+    my_ret = False
+    error_hit = False
 
     acls = get_source_acls(source_dir)
-    result = set_dest_acls(dest_dir, acls)
+    for root, dirs, files in os.walk(dest_dir, topdown=False):
+        for name in files:
+            result = set_dest_acls(os.path.join(root, name), acl)
+            if not result:
+                error_hit = True
+        for name in dirs:
+            result = set_dest_acls(os.path.join(root, name), acl)
+            if not result:
+                error_hit = True
+    
     Logger.log_debug(str(result))
-    Logger.log_debug("EXIT async_reacl")
+    Logger.log_debug("EXIT async_reacl: '" + str(my_ret) + "'")
+    return my_ret
 
 def perform_fast_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER perform_fast_reacl")
