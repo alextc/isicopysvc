@@ -8,7 +8,208 @@ is move?
 if yes, start permissions repair job, update db with JID
 if no, start thread/script/x for copy
 '''
+import sys
+import socket
+import os
+import fileinput
+import time
+import fcntl
+import datetime
+import json
+import glob
+import shutil
 
+max_proceses = 5
+max_cpu_load = 50
+max_stale_hb_time_in_seconds = 30
+process_file = '/ifs/copy_svc/' + socket.gethostname() + '_process_list.dat'
+potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*"
+datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
+process_state = {"Init":"Init", "CopyOrig":"CopyOrig", "ReAcl":"ReAcl", "Move":"Move", "Cleanup":"Cleanup"}
+
+class state_obj:
+    cur_state = "Init"
+    source_dir = ""
+    target_dir = ""
+    process_dir = ""
+    hb_file = ""
+    state_file = ""
+
+def max_proceses_running():
+    my_return = False
+    if os.path.isfile(process_file):
+        retry_count = 0
+        while(True):
+            if retry_count > 10:
+                break
+            try:
+                with open(process_file) as process_info:
+                    fcntl.flock(process_file, fcntl.LOCK_EX)
+                    process_info.writelines(str(os.getpid()))
+                    if processes:
+                        if processes.count < max_proceses:
+                            my_return = True
+                break
+            except:
+                time.sleep(1)
+                retry_count += 1
+        
+    return my_return
+
+def add_process_running():
+    retry_count = 0
+    my_ret = False
+    while(True):
+        if retry_count > 10:
+            break
+        try:
+            with open(process_file, 'w+') as process_info:
+                fcntl.flock(process_file, fcntl.LOCK_EX)
+                process_info.writelines(str(os.getpid()))
+                my_ret = True
+            break
+        except:
+           time.sleep(1)
+           retry_count += 1 
+    return my_ret
+
+def remove_process_running():
+    retry_count = 0
+    my_ret = False
+    while(True):
+        if retry_count > 300:
+            break
+        try:
+            lines = []
+            with open(process_file, 'r') as process_info:
+                fcntl.flock(process_file, fcntl.LOCK_EX)
+                lines = process_info.readlines()
+            if lines:
+                with open(process_file,'w') as process_info:
+                    fcntl.flock(process_file, fcntl.LOCK_EX)
+                    first_line = True
+                    for each_line in lines:
+                        if not first_line:
+                            process_info.writelines(each_line)
+                            first_line = False
+            my_ret = True
+            break
+        except:
+           time.sleep(1)
+           retry_count += 1 
+
+def current_cpu_utilization():
+    # grab this from os.popen('uptime')
+    # TODO:
+    return 2
+
+def can_do_work():
+    my_ret = not max_proceses_running()
+    if my_ret:
+        my_ret = current_cpu_utilization() < max_cpu_load
+    return my_ret
+
+def get_work_available():
+    my_ret = get_stranded_work()
+    if not my_ret:
+        my_ret = get_new_work()
+
+    return my_ret
+
+def get_new_work():
+    my_ret = ""
+    potential_work_targets = glob.glob(potential_work_target_string)
+    if potential_work_targets:
+        for each_potential_work_target in potential_work_targets:
+            if not each_potential_work_target.endswith("_in_process"):
+                my_ret = take_ownership(each_potential_work_target, False)
+                break
+    return my_ret
+
+def take_ownership(potential_work_target, ignore_prev_owner):
+    my_ret = ""
+    retry_count = 0
+    expected_path = get_ownership_path(potential_work_target)
+    expected_hb_file = expected_path + "/hb.dat"
+    expected_state_file = expected_path + "/state.dat"
+    expected_source_path = expected_path + "/source.dat"
+    while(True):
+        try:
+            potential_takes = glob.glob(potential_work_target + "*_in_process")
+            if not potential_takes or ignore_prev_owner :
+               os.mkdir(expected_path)
+               with open(expected_hb_file,'w+') as hb_file:
+                   hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
+               with open(expected_state_file, 'w+') as state_file:
+                   hb_file.writelines("Init")
+               with open(expected_source_path, 'w+') as source_file:
+                    source_file.writelines(potential_work_target)
+               my_ret = state_obj()
+               my_ret.state = "Init"
+               my_ret.source_dir = potential_work_target
+               my_ret.target_dir = get_target_from_source(my_ret.source_dir)
+               my_ret.process_dir = expected_path
+               my_ret.hb_file = expected_hb_file
+               my_ret.state_file = expected_state_file
+
+            break
+        except:
+            if retry_count > 5:
+                break
+            else:
+                time.sleep(1)
+                retry_count += 1
+                
+
+    return my_ret
+
+def get_target_from_source(source_dir):
+    my_ret = source_dir.replace("staging","from")
+
+def get_stranded_work():
+    my_ret = ""
+    potential_strand_targets = glob.glob(potential_work_target_string)
+    if potential_strand_targets:
+        for each_potential_strand_target in potential_strand_targets:
+            if each_potential_strand_target.endswith("_in_process"):
+                if stale_heartbeat(each_potential_strand_target):
+                    my_ret = take_ownership(get_original_source(each_potential_strand_target), True)
+                    if my_ret:
+                        my_ret.state = get_state(each_potential_strand_target)
+                        shutil.rmtree(each_potential_strand_target)
+                        break
+    return my_ret
+
+def get_original_source(ownership_path):
+    my_ret = ""
+    original_source = ownership_path + "/source.dat"
+    if os.path.exists(original_source):
+        with open(original_source) as orig_source:
+            my_ret = orig_source.readline().strip()
+    
+    return my_ret
+
+def stale_heartbeat(ownership_path):
+    my_ret = True
+    hbFile = ownership_path + "/hb.dat"
+    with open(hbFile) as last_heartbeat:
+        last_hb_time = last_heartbeat.readline().strip()
+        if last_hb_time:
+            last_hb_datetime = datetime.datetime.strptime(persistence_string, datetime_format_string)
+            if (datetime.datetime.utcnow() - last_hb_datetime).Seconds < max_stale_hb_time_in_seconds:
+                my_ret = False
+    return my_ret
+
+def get_state(ownership_path):
+    my_ret = ""
+    state_file_name = ownership_path + "/state.dat"
+    with open(state_file_name) as state_file:
+        my_ret = state_file.readline()
+    return my_ret
+
+def get_ownership_path(path):
+    my_ret = path + "_" + socket.gethostname() + "_" + str(os.getpid()) + "_in_process"
+    return my_ret
 
 def look_for_folders():
     # am i not resource constrainded
@@ -50,29 +251,163 @@ def get_isi_job_status():
     # isi job events list --job-id 170 | grep Succeeded
     return statuses
 
+def spawn_new_woker(should_wait):
+    if should_wait:
+        os.spawnl(os.P_WAIT, "python", "my script path")
+    else:
+        os.spawnl(os.P_NOWAIT,"python", "my script path")       
 
-work = look_for_work()
+def perform_heartbeat(state):
+    with open(state.hb_file,'w+') as state_file:
+        fcntl.flock(state_file, fcntl.LOCK_EX)
+        hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
 
-for folder in work:
-    if not is_dir_in_progress(folder):
-        if is_copy(folder):
-            if claim_copy_dir_job(folder):
-                #successfully claimed copy job
-                start_copy_job(folder)
-                 
+
+
+def needs_copy(state):
+    my_ret = False
+    perform_heartbeat(state)
+    if os.path.exists(state.target_dir):
+        my_ret = True
+
+    return my_ret
+
+def save_state(state):
+    perform_heartbeat(state)
+    with open(state.state_file,'w+') as state_file:
+        state_file.writelines(state.cur_state)
+
+def perform_fast_copy(source_dir, target_dir, recursive):
+    my_ret = ""
+
+    # TODO figure out a spawned copy process to check
+    return my_ret
+
+def process_finished(process_obj):
+    my_ret = True
+    if process_obj:
+       my_ret = process_obj.HasExited()
+    return my_ret
+
+def check_process_result(process_obj):
+    my_ret = False
+    if process_obj:
+        my_ret = (process_obj.ExitCode == 0)
+
+    return my_ret
+
+def copy_original_to_staging(state):
+    my_ret = False
+    copy_in_progress = False
+    copy_process_obj = ""
+    while(True):
+        perfrom_heartbeat(state)
+        if not copy_in_progress:
+            copy_process_obj = perform_fast_copy(state.target_dir, state.source_dir, True)
+            copy_in_progress = True
         else:
-            if claim_move_dir_job(folder):
-                #successfully claimed move job
-                job_id = start_ACL_repair_job(folder)
-                set_ACL_repair_job(folder, job_id)
-               
+            if process_finished(copy_process_obj):
+                break
+        time.sleep(1)
 
-for folder in get_ACL_job_in_progress():
-    get_isi_job_status()
-    
-            
-      
-          
-         
+    my_ret = check_process_result(copy_process_obj)
+    return my_ret
+
+def perform_fast_reacl(source_dir, dest_dir):
+    my_ret = ""
+
+    #TODO find out some super cool reacl thingy
+    return my_ret
+
+
+def reacl_staging(state):
+    my_ret = False
+    reacl_in_progress = False
+    reacl_process_obj = ""
+    while(True):
+        perfrom_heartbeat(state)
+        if not reacl_in_progress:
+            reacl_process_obj = perform_fast_reacl(os.path.join(state.target_dir,os.pardir), state.source_dir)
+            reacl_in_progress = True
+        else:
+            if process_finished(reacl_process_obj):
+                break
+        time.sleep(1)
+
+    my_ret = check_process_result(reacl_process_obj)
+    return my_ret
+
+def move_staging(state):
+    my_ret = False
+    perfrom_heartbeat(state)
+    if os.path.exists(state.target_dir):
+        shutil.move(state.target_dir, state.process_dir + "/old_source_dir")
+
+    shutil.move(state.source_dir, state.target_dir)
+    my_ret = True
+    return my_ret
+
+def perform_fast_rmdir(source_dir):
+    my_ret = False
+
+    #TODO find a way to do fast cleanup
+    return my_ret
+
+def cleanup_staging(state):
+    my_ret = False
+    cleanup_in_progress = False
+    cleanup_process_obj = ""
+    while(True):
+        if not cleanup_in_progress:
+            cleanup_process_obj = perform_fast_rmdir(state.source_dir)
+            cleanup_in_progress = True
+        else:
+            if process_finished(cleanup_process_obj):
+                break
+        time.sleep(1)
+
+    my_ret = check_process_result(cleanup_process_obj)
+    return my_ret
+
+def process_work(state):
+    while(True):
+        if state.cur_state == "Init":
+            if needs_copy(state):
+                state.cur_state = "CopyOrig"
+                save_state(state)
+                if copy_original_to_staging(state):
+                    state.cur_state = "ReAcl"
+                    save_state(state)
         
+        if state.cur_state == "CopyOrig":
+            if copy_original_to_staging(state):
+                state.cur_state = "ReAcl"
+                save_state(state)
+
+        if state.cur_state == "ReAcl":
+            if reacl_staging(state):
+                state.cur_state = "Move"
+                save_state(state)
+
+        if state.cur_state == "Move":
+            if move_staging(state):
+                state.cur_state = "Cleanup"
+                save_state(state)
+
+        if state.cur_state == "Cleanup":
+            if cleanup_staging(state):
+                print_success(state)
     
+try:
+    if can_do_work():
+        if add_process_running():
+            try:
+                my_work = get_work_available()
+                if my_work:
+                   perform_heartbeat(my_work)
+                   spawn_new_worker(False)
+                   process_work(my_work)
+            finally:
+                remove_process_running()
+except:
+    spawn_new_worker(True)
