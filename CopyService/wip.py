@@ -453,7 +453,7 @@ def async_move(state):
 def perform_fast_move(state):
     Logger.log_debug("ENTER perform_fast_move")
     my_ret = None
-    my_ret = Process(target=async_move, args=state)
+    my_ret = Process(target=async_move, args=(state,))
     my_ret.start()
     Logger.log_debug("EXIT perform_fast_move: '" + str(my_ret) + "'")
     return my_ret
