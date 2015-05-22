@@ -160,8 +160,6 @@ def take_ownership(potential_work_target, ignore_prev_owner):
                    owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
                with open(expected_hb_file,'w+') as hb_file:
                    hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
-               with open(expected_state_file, 'w+') as state_file:
-                   state_file.writelines("Init")
                with open(expected_source_file, 'w+') as source_file:
                     source_file.writelines(potential_work_target)
                my_ret = state_obj()
