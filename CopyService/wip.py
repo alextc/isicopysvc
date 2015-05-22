@@ -503,14 +503,20 @@ def move_staging(state):
     Logger.log_debug("EXIT move_staging: '" + str(my_ret) + "'")
     return my_ret
 
+def async_rmdir(dir):
+    Logger.log_debug("ENTER async_rmdir")
+
+    shutil.rmtree(dir)
+
+    Logger.log_debug("EXIT async_rmdir")
+
 def perform_fast_rmdir(source_dir):
     Logger.log_debug("ENTER perform_fast_rmdir")
     my_ret = False
 
-    #TODO find a way to do fast cleanup
-
-    #shutil.remtree(source_dir);
-
+    my_ret = None
+    my_ret = Process(target=async_rmdir, args=(source_dir,))
+    my_ret.start()
     Logger.log_debug("EXIT perform_fast_rmdir: '" + str(my_ret) + "'")
     return my_ret
 
