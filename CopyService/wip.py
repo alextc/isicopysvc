@@ -139,7 +139,8 @@ def get_new_work():
         for each_potential_work_target in potential_work_targets:
             if not each_potential_work_target.endswith("_in_process"):
                 my_ret = take_ownership(each_potential_work_target, False)
-                break
+                if my_ret:
+                    break
     Logger.log_debug("EXIT get_new_work: '" + str(my_ret) + "'")
     return my_ret
 
