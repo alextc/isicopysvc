@@ -35,6 +35,8 @@ class state_obj:
     process_dir = ""
     hb_file = ""
     state_file = ""
+    def __str__(self):
+        return "State:" + self.cur_state + "\n" + "Source:" + self.source_dir + "\n" + "Target" + self.target_dir + "\n" + "ProcessDir:" + self.process_dir + "\n" + "HeartBeatFile:" + self.hb_file + "\n" + "StateFile:" + self.state_file
 
 def max_proceses_running():
     Logger.log_debug("ENTER max_proceses_running")
