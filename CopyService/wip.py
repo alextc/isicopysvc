@@ -293,7 +293,7 @@ def spawn_new_woker(should_wait):
 
 def perform_heartbeat(state):
     Logger.log_debug("ENTER perform_heartbeat")
-    with open(state.hb_file,'w+') as state_file:
+    with open(state.hb_file,'w+') as hb_file:
         fcntl.flock(state_file, fcntl.LOCK_EX)
         hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
     Logger.log_debug("EXIT perform_heartbeat")
