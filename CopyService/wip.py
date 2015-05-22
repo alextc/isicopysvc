@@ -398,6 +398,8 @@ def async_reacl(source_dir, dest_dir):
 
 def perform_fast_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER perform_fast_reacl")
+    Logger.log_debug(source_dir)
+    Logger.log_debug(dest_dir)
     my_ret = None
     my_ret = Process(target=async_reacl, args=(source_dir, dest_dir))
     my_ret.start()
@@ -412,7 +414,7 @@ def reacl_staging(state):
     while(True):
         perform_heartbeat(state)
         if not reacl_in_progress:
-            reacl_process_obj = perform_fast_reacl(os.path.join(state.target_dir,os.pardir), state.source_dir)
+            reacl_process_obj = perform_fast_reacl(os.path.split(state.target_dir)[0], state.source_dir)
             reacl_in_progress = True
         else:
             if process_finished(reacl_process_obj):
