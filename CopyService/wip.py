@@ -20,6 +20,7 @@ import glob
 import shutil
 import unicodedata
 import Common.Logging as Logger
+import Common.papi as PAPI
 from multiprocessing import Process, Queue
 
 max_proceses = 5
@@ -372,71 +373,18 @@ def copy_original_to_staging(state):
 
 def get_source_acls(source_dir):
     Logger.log_debug("ENTER get_source_acls")
-    json_string = """
-{
-"acl" : 
-[
-
-{
-"accessrights" : [ "dir_gen_read", "dir_gen_execute" ],
-"accesstype" : "allow",
-"inherit_flags" : [ "object_inherit", "container_inherit", "inherited_ace" ],
-"trustee" : 
-{
-"id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1124",
-"name" : "KRAFTESXI-one_admin",
-"type" : "group"
-}
-},
-
-{
-"accessrights" : [ "dir_gen_read", "dir_gen_execute" ],
-"accesstype" : "allow",
-"inherit_flags" : [ "object_inherit", "container_inherit", "inherited_ace" ],
-"trustee" : 
-{
-"id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1123",
-"name" : "KRAFTESXI-one_ro",
-"type" : "group"
-}
-},
-
-{
-"accessrights" : [ "dir_gen_read", "dir_gen_execute" ],
-"accesstype" : "allow",
-"inherit_flags" : [ "object_inherit", "container_inherit", "inherited_ace" ],
-"trustee" : 
-{
-"id" : "SID:S-1-5-21-3293755678-1414311877-3202365787-1120",
-"name" : "KRAFTESXI-one_rw",
-"type" : "group"
-}
-}
-],
-"authoritative" : "acl",
-"group" : 
-{
-"id" : "GID:0",
-"name" : "wheel",
-"type" : "group"
-},
-"mode" : "0550",
-"owner" : 
-{
-"id" : "UID:0",
-"name" : "root",
-"type" : "user"
-}
-}
-"""
-    my_ret = json.loads(json_string)
-    return my_ret['acl']
+    my_ret = None
+    acl_string = PAPI.grab_aclfromobj(source_dir)
+    if acl_string:
+        my_ret = json.loads(acl_string)
+    Logger.log_debug("EXIT get_source_acls: '" + str(my_ret) + "'")
+    return my_ret
 
 def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
     acls = get_source_acls(dest_dir)
     for each_acl in acls:
-        Logger.log_debug(str(each_acl))
+        Logger.log_debug(str(each_acl['acl']))
     Logger.log_debug("EXIT async_reacl")
 
 def perform_fast_reacl(source_dir, dest_dir):

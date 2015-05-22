@@ -26,6 +26,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Common\papi.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Common\__init__.py">
       <SubType>Code</SubType>
     </Compile>
