@@ -53,6 +53,9 @@ def grab_aclfromobj(obj_path):
     # here we only put to use the third element (aka [2]) of the tuple which has everything we need
     return ran_action('GET', url_parts, query_dict)[2]
 
-def set_aclonobj(obj_path,acl):
-    pass
+def set_aclonobj(obj_path, acl):
+    url_parts = ['namespace'] + obj_path.split("/")
+    query_dict = {'acl':''}
+    body = json.dumps(acl)
+    return ran_action('PUT', url_parts, query_dict, {}, body)[2]
 

@@ -380,12 +380,17 @@ def get_source_acls(source_dir):
     Logger.log_debug("EXIT get_source_acls: '" + str(my_ret) + "'")
     return my_ret
 
+def set_dest_acls(source_dir, acl):
+    Logger.log_debug("ENTER set_dest_acls")
+    my_ret = PAPI.set_aclonobj(source_dir, acl)
+    Logger.log_debug("EXIT set_dest_acls: '" + str(my_ret) + "'")
+    return my_ret
+
 def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
     acls = get_source_acls(dest_dir)
-    for each_acl in acls['acl']:
-        str_display = each_acl
-        Logger.log_debug(str_display)
+    result = set_dest_acls(source_dir, acls)
+    Logger.log_debug(str(result))
     Logger.log_debug("EXIT async_reacl")
 
 def perform_fast_reacl(source_dir, dest_dir):
