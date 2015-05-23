@@ -52,11 +52,12 @@ def max_proceses_running():
                 break
             try:
                 with open(process_file) as process_info:
+                    fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
                     processes = process_info.readlines()
                     if processes:
-                        with open(process_file_perist, 'a+') as process_info:
-                            fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
-                            process_info.writelines("current_process_count: " + str(len(processes)) + ", MaxConcurrent: " + str(max_concurrent) + " spawn_new? " + str(len(processes) < max_concurrent) + "\n")
+                        with open(process_file_perist, 'a+') as process_info2:
+                            fcntl.flock(process_info2.fileno(), fcntl.LOCK_EX)
+                            process_info2.writelines("current_process_count: " + str(len(processes)) + ", MaxConcurrent: " + str(max_concurrent) + " spawn_new? " + str(len(processes) < max_concurrent) + "\n")
                         if len(processes) < max_concurrent:
                             my_ret = True
                 break
