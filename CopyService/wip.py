@@ -172,9 +172,18 @@ def take_ownership(potential_work_target, ignore_prev_owner):
             potential_takes.sort()
             if not potential_takes or ignore_prev_owner :
                if not os.path.exists(expected_path):
-                   os.mkdir(expected_path)
-               with open(expected_owner_file, 'w+') as owner_file:
-                   owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
+                   try:
+                       os.mkdir(expected_path)
+                   except IOError as e:
+                       Logger.log_exception(e)
+                       break
+               if (not os.path.exists(expected_owner_file)) or ignore_prev_owner:
+                   with open(expected_owner_file, 'w+') as owner_file:
+                       fcntl.flock(expected_owner_file.fileno(), fcntl.LOCK_EX)
+                       owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
+               else:
+                   Logger.log_warning("owner file already existed for file '" + expected_owner_file + "'")
+                   break
                with open(expected_hb_file,'w+') as hb_file:
                    hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
                with open(expected_source_file, 'w+') as source_file:
