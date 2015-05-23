@@ -58,7 +58,7 @@ def max_proceses_running():
                         with open(process_file_perist, 'a+') as process_info2:
                             fcntl.flock(process_info2.fileno(), fcntl.LOCK_EX)
                             process_info2.writelines("current_process_count: " + str(len(processes)) + ", MaxConcurrent: " + str(max_concurrent) + " spawn_new? " + str(len(processes) < max_concurrent) + "\n")
-                        if len(processes) < max_concurrent:
+                        if len(processes) >= max_concurrent:
                             my_ret = True
                 break
             except Exception as e:
