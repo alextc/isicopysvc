@@ -239,6 +239,7 @@ def stale_heartbeat(ownership_path):
     while(True):
         if os.path.exists(hbFile):
             with open(hbFile) as last_heartbeat:
+                fcntl.flock(last_heartbeat.fileno(), fcntl.LOCK_EX)
                 last_hb_time = last_heartbeat.readline().strip()
                 if last_hb_time:
                     last_hb_datetime = datetime.datetime.strptime(last_hb_time, datetime_format_string)
