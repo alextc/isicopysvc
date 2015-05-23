@@ -53,7 +53,7 @@ def max_proceses_running():
                 with open(process_file) as process_info:
                     processes = process_info.readlines()
                     if processes:
-                        if processes.count < max_proceses:
+                        if len(processes) < max_proceses:
                             my_ret = True
                 break
             except Exception as e:
@@ -100,7 +100,7 @@ def remove_process_running():
                     first_line = True
                     for each_line in lines:
                         if not first_line:
-                            process_info.writelines(each_line)
+                            process_info.writelines(each_line + "\n")
                             first_line = False
             my_ret = True
             break
