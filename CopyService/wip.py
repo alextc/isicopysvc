@@ -71,7 +71,7 @@ def add_process_running():
         if retry_count > 10:
             break
         try:
-            with open(process_file, 'w+') as process_info:
+            with open(process_file, 'a+') as process_info:
                 fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
                 process_info.writelines(str(os.getpid()))
                 my_ret = True
