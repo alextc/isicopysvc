@@ -571,7 +571,7 @@ except KeyboardInterrupt:
     Logger.log_message("ctrl-c detected")
 except Exception as e:
     Logger.log_exception(e)
-    spawn_new_worker(True)
+    #spawn_new_worker(True)
 finally:
      if process_running_added:
         remove_process_running()
