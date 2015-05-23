@@ -506,6 +506,11 @@ def cleanup_staging(state):
     Logger.log_debug("EXIT cleanup_staging: '" + str(my_ret) + "'")
     return my_ret
 
+def print_success(state):
+    Logger.log_debug("ENTER print_success")
+    Logger.log_message("SUCCESS moved: '" + state.source_dir + "' to '" + state.target_dir + "'")
+    Logger.log_debug("EXIT print_success")
+
 def process_work(state):
     Logger.log_debug("ENTER process_work")
     while(True):
