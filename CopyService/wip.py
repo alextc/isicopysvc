@@ -237,10 +237,12 @@ def stale_heartbeat(ownership_path):
 
 def get_state(ownership_path):
     Logger.log_debug("ENTER get_state")
-    my_ret = ""
+    my_ret = "Init"
     state_file_name = ownership_path + "/state.dat"
-    with open(state_file_name) as state_file:
-        my_ret = state_file.readline()
+    if os.path.exists(state_file_name):
+        with open(state_file_name) as state_file:
+            my_ret = state_file.readline()
+       
     Logger.log_debug("EXIT get_state: '" + str(my_ret) + "'")
     return my_ret
 
@@ -256,7 +258,7 @@ def launch_script(script_path):
 def spawn_new_worker(should_wait):
     Logger.log_debug("ENTER spawn_new_worker")
     process_obj = Process(target=launch_script, args=(os.path.realpath(__file__),))
-    process_obj.run()
+    process_obj.start()
     if should_wait:
         Logger.log_debug("spawning new instance of script and waiting")
         process_obj.join()
