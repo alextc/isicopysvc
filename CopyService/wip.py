@@ -73,7 +73,7 @@ def add_process_running():
         try:
             with open(process_file, 'a+') as process_info:
                 fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
-                process_info.writelines(str(os.getpid()))
+                process_info.writelines(str(os.getpid()) + "\n")
                 my_ret = True
             break
         except:
