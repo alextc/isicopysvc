@@ -235,12 +235,23 @@ def stale_heartbeat(ownership_path):
     Logger.log_debug("ENTER stale_heartbeat")
     my_ret = True
     hbFile = ownership_path + "/hb.dat"
-    with open(hbFile) as last_heartbeat:
-        last_hb_time = last_heartbeat.readline().strip()
-        if last_hb_time:
-            last_hb_datetime = datetime.datetime.strptime(last_hb_time, datetime_format_string)
-            if (datetime.datetime.utcnow() - last_hb_datetime).seconds < max_stale_hb_time_in_seconds:
-                my_ret = False
+    start = datetime.datetime.utcnow()
+    while(True):
+        if os.path.exists(hbFile):
+            with open(hbFile) as last_heartbeat:
+                last_hb_time = last_heartbeat.readline().strip()
+                if last_hb_time:
+                    last_hb_datetime = datetime.datetime.strptime(last_hb_time, datetime_format_string)
+                    if (datetime.datetime.utcnow() - last_hb_datetime).seconds < max_stale_hb_time_in_seconds:
+                        my_ret = False
+            break
+        else:
+            #sleep for a second to let the other process try to write the file
+            time.sleep(1)
+            if (datetime.datetime.utcnow() - start).seconds > max_stale_hb_time_in_seconds:
+                #exceeded 15 seconds waiting for the hb file
+                break
+
     Logger.log_debug("EXIT stale_heartbeat: '" + str(my_ret) + "'")
     return my_ret
 
