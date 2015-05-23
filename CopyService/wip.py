@@ -559,7 +559,8 @@ try:
                 perform_heartbeat(my_work)
                 spawn_new_worker(False)
                 process_work(my_work)
-           
+except KeyboardInterrupt:
+    Logger.log_message("ctrl-c detected")
 except Exception as e:
     Logger.log_exception(e)
     spawn_new_worker(True)
