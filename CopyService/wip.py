@@ -27,6 +27,7 @@ max_proceses = 5
 max_cpu_load = 50
 max_stale_hb_time_in_seconds = 30
 process_file = '/ifs/copy_svc/' + socket.gethostname() + '_process_list.dat'
+process_file_perist = '/ifs/copy_svc/' + socket.gethostname() + '_process_list_persist.dat'
 potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*"
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 process_state = {"Init":"Init", "CopyOrig":"CopyOrig", "ReAcl":"ReAcl", "Move":"Move", "Cleanup":"Cleanup"}
@@ -75,6 +76,9 @@ def add_process_running():
                 fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
                 process_info.writelines(str(os.getpid()) + "\n")
                 my_ret = True
+            with open(process_file_perist, 'a+') as process_info:
+                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
+                process_info.writelines(str(os.getpid()) + "\n")
             break
         except:
            time.sleep(1)
