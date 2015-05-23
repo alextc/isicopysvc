@@ -23,7 +23,7 @@ import Common.Logging as Logger
 import Common.papi as PAPI
 from multiprocessing import Process, Queue
 
-max_proceses = 5
+max_concurrent = 5
 max_cpu_load = 50
 max_stale_hb_time_in_seconds = 30
 process_file = '/ifs/copy_svc/' + socket.gethostname() + '_process_list.dat'
@@ -54,7 +54,10 @@ def max_proceses_running():
                 with open(process_file) as process_info:
                     processes = process_info.readlines()
                     if processes:
-                        if len(processes) < max_proceses:
+                        with open(process_file_perist, 'a+') as process_info:
+                            fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
+                            process_info.writelines("current_process_count: " + str(len(processes)) + ", MaxConcurrent: " + str(max_concurrent) + " spawn_new? " + str(len(processes) < max_concurrent) + "\n")
+                        if len(processes) < max_concurrent:
                             my_ret = True
                 break
             except Exception as e:
@@ -123,9 +126,10 @@ def current_cpu_utilization():
 
 def can_do_work():
     Logger.log_debug("ENTER can_do_work")
-    my_ret = not max_proceses_running()
-    if my_ret:
-        my_ret = current_cpu_utilization() < max_cpu_load
+    max_running = max_proceses_running()
+    my_ret = False
+    if not max_running:
+        my_ret = (current_cpu_utilization() < max_cpu_load)
     Logger.log_debug("EXIT can_do_work: '" + str(my_ret) + "'")
     return my_ret
 
