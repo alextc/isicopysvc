@@ -40,6 +40,12 @@
     <Compile Include="Common\Logging.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tests\file_locking_tests.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\sqlite_wrapper_tests.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="v1.py" />
     <Compile Include="wip.py" />
   </ItemGroup>
@@ -48,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Common\" />
+    <Folder Include="tests\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
