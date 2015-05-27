@@ -1,7 +1,10 @@
 import unittest
 import fcntl
+import subprocess
+import time
 
-class file_locking_tests(unittest.TestCase):
+
+class FileLockingTests(unittest.TestCase):
 
     def test_attempt_to_lock_locked_file_must_throw_ioerror(self):
       with open("foo", 'a+') as file_to_lock:
@@ -17,7 +20,27 @@ class file_locking_tests(unittest.TestCase):
             #I would expect this to fail since the file is locked, but this works
             with open("foo", 'a+') as file_to_lock_again:           
                 file_to_lock_again.writelines("Writing to a locked file\n")
-                                
+
+    def test_must_aquire_lock_after_lock_is_released(self):
+        with open("foo1", 'a+') as file_to_lock1:
+            lock_file_ex(file_to_lock1)
+
+        with open("foo1", 'a+') as file_to_lock2:
+            lock_file_ex(file_to_lock2)
+
+    def test_must_aquire_lock_when_another_process_crashed_before_releasing(self):
+        subprocess.call(
+            ['python', '/ifs/copy_svc/code/CopyService/utils/lockfile.py', '/ifs/copy_svc/lock1.file', 'True'])
+        time.sleep(1)
+
+        try:
+            subprocess.check_call(
+                ['python', '/ifs/copy_svc/code/CopyService/utils/lockfile.py', '/ifs/copy_svc/lock1.file', 'False'])
+        except subprocess.CalledProcessError as err:
+            print 'ERROR:', err
+            self.assertFalse()
+
+
 def lock_file_ex(file_handle):
         #Calling this without LOCK_NB makes this a blocking call
         fcntl.flock(file_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB )
