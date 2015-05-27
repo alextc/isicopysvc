@@ -14,10 +14,12 @@ class file_locking_tests(unittest.TestCase):
       with open("foo", 'a+') as file_to_lock:
             lock_file_ex(file_to_lock)
              
+            #I would expect this to fail since the file is locked, but this works
             with open("foo", 'a+') as file_to_lock_again:           
                 file_to_lock_again.writelines("Writing to a locked file\n")
                                 
 def lock_file_ex(file_handle):
+        #Calling this without LOCK_NB makes this a blocking call
         fcntl.flock(file_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB )
                                        
 if __name__ == '__main__':
