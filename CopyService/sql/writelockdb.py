@@ -57,8 +57,6 @@ class WriteLockDb:
         for result in results:
             print("{0} {1}".format(result[0], result[1]))
 
-
-
     def delete_last_seen_records(self, path):
         connection = sqlite3.connect(self._data_file_path)
         cursor =  connection.cursor()

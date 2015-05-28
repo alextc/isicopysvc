@@ -31,6 +31,7 @@ class FileLockingTests(unittest.TestCase):
     def test_must_aquire_lock_when_another_process_crashed_before_releasing(self):
         subprocess.call(
             ['python', '/ifs/copy_svc/code/CopyService/utils/lockfile.py', '/ifs/copy_svc/lock1.file', 'True'])
+
         time.sleep(1)
 
         try:
