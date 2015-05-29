@@ -19,7 +19,7 @@ class GetSmbLocksCommand(PapiCommand):
                     os.path.dirname(self.__convert_directory_path_to_unix_style(openfile['file']))
                 if (dir_unix_style.startswith(self._path)) and ('write' in openfile['permissions']):
                     if dir_unix_style not in result:
-                        result.append(dir_unix_style)
+                        result.append(dir_unix_style + "/")
 
         return result
 

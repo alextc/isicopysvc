@@ -65,6 +65,12 @@ class WriteLockDb:
         connection.commit()
         connection.close()
 
+    def clear_last_seen_table(self):
+        with sqlite3.connect(self._data_file_path) as connection:
+            cursor =  connection.cursor()
+            sql_delete_query = "DELETE from openfiles"
+            cursor.execute(sql_delete_query)
+
     def drop_last_seen_table(self):
         connection = sqlite3.connect(self._data_file_path)
         cursor = connection.cursor()

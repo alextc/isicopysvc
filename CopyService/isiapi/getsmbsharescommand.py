@@ -16,6 +16,6 @@ class GetSmbSharesCommand(PapiCommand):
             json_payload = json.loads(raw_response[2])
             for share in json_payload['shares']:
                 if share['path'].startswith(self._path):
-                    result.append(share['path'])
+                    result.append(share['path'] + "/")
 
         return result
