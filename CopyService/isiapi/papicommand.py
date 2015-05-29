@@ -1,7 +1,7 @@
 __author__ = 'alextc'
 import isi.rest
 
-class PapiCommand():
+class PapiCommand(object):
     _socket_type = isi.rest.PAPI_SOCKET_PATH
     _timeout = 120
 
@@ -14,20 +14,16 @@ class PapiCommand():
 
     def execute(self):
         response = isi.rest.send_rest_request(
-            socket_path = self._socket_type,
-            method = self._http_verb,
-            uri = self._url_parts,
-            query_args = self._query_dict,
-            headers = self._header_dict,
-            body = self._body_data,
-            timeout = self._timeout
+            socket_path=self._socket_type,
+            method=self._http_verb,
+            uri=self._url_parts,
+            query_args=self._query_dict,
+            headers=self._header_dict,
+            body=self._body_data,
+            timeout=self._timeout
         )
         return response
 
     def __str__(self):
         return "HTTP_VERB: " + self._http_verb + "\n" \
                "URL_PARTS: " + " ".join(self._url_parts)
-
-class GetSmbLocksCommand(PapiCommand):
-    def __init__(self):
-        PapiCommand.__init__(self,  "GET", ['1', 'protocols', 'smb', 'openfiles'])
