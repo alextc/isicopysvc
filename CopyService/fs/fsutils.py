@@ -4,9 +4,12 @@ import logging
 
 class FsUtils(object):
 
+    def __init__(self):
+        self._logger = logging.getLogger(__name__)
+
     def get_source_directories(self, root_path):
-        logging.debug("FsUtils.get_source_directories ENTERING")
-        logging.debug("\tPARAMETER root_path %s", root_path)
+        self._logger.debug("\n\tENTERING get_source_directories")
+        self._logger.debug("\n\tPARAMETER root_path\n\t\t%s", root_path)
         result = glob.glob(root_path)
-        logging.debug("\tRETURN:\n\t\t%s", "\n\t\t".join(result))
+        self._logger.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result))
         return result
