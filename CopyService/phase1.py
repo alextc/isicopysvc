@@ -28,12 +28,13 @@ class Phase1(object):
     def write_locks_to_db(self, sources, locks):
         datetime_wrapper = DateTimeWrapper()
         db_wrapper = WriteLockDb(self._db_path)
+        current_datetime_in_utc = datetime_wrapper.get_current_utc_datetime_as_formatted_string()
 
         for source in sources:
             if source in locks:
-                db_wrapper.insert_or_replace_last_seen(
-                    source,
-                    datetime_wrapper.get_current_utc_datetime_as_formatted_string())
+                db_wrapper.insert_or_replace_last_seen(source, current_datetime_in_utc)
+            else:
+                db_wrapper.insert_or_replace_last_seen_ignore_if_exists(source, current_datetime_in_utc )
 
     def dump_db(self):
         print "Dumping Db"
@@ -43,11 +44,9 @@ class Phase1(object):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     phase1 = Phase1("/ifs/zones/*/to/*/*/", "/ifs/copy_svc/openfiles.db")
-    # TODO: remove this line - testing
-    phase1.clear_db()
     source_dirs = phase1.get_sources()
     if not source_dirs:
-        print "Nothing to do"
+        logging.info("Nothing to do")
         phase1.clear_db()
         sys.exit()
 
