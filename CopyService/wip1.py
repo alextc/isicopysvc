@@ -1,13 +1,3 @@
-''' Long running script to look for WIP
-Looks for dirs in staging
-if see work, is it in progress
-  if yes, move on
-  if no, claim work
-if able to claim work
-is move?
-if yes, start permissions repair job, update db with JID
-if no, start thread/script/x for copy
-'''
 import sys
 import socket
 import os
@@ -17,11 +7,12 @@ import datetime
 import json
 import glob
 import shutil
-import Common.Logging as Logger
 import Common.papi as PAPI
 from multiprocessing import Process
 import logging
+from CopyService.aop.logstartandexit import LogEntryAndExit
 
+max_retry_count = 5
 max_concurrent = 5
 max_cpu_load = 50
 max_stale_hb_time_in_seconds = 30
@@ -30,6 +21,8 @@ process_file_persist = '/ifs/copy_svc/' + socket.gethostname() + '_process_list_
 potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*"
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 process_state = {"Init":"Init", "CopyOrig":"CopyOrig", "ReAcl":"ReAcl", "Move":"Move", "Cleanup":"Cleanup"}
+
+logging.basicConfig(filename='wip.log',level=logging.DEBUG)
 
 class state_obj:
     cur_state = "Init"
@@ -41,122 +34,99 @@ class state_obj:
     def __str__(self):
         return "State:" + self.cur_state + "\n" + "Source:" + self.source_dir + "\n" + "Target" + self.target_dir + "\n" + "ProcessDir:" + self.process_dir + "\n" + "HeartBeatFile:" + self.hb_file + "\n" + "StateFile:" + self.state_file
 
-def max_proceses_running():
-    logging.debug("ENTER max_proceses_running")
-    my_ret = False
-    if os.path.isfile(process_file):
-        retry_count = 0
-        while(True):
-            if retry_count > 10:
-                break
-            try:
-                with open(process_file) as process_info:
-                    fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    processes = process_info.readlines()
-                    if processes:
-                        with open(process_file_persist, 'a+') as process_info2:
-                            fcntl.flock(process_info2.fileno(), fcntl.LOCK_EX)
-                            process_info2.writelines("current_process_count: " + str(len(processes)) + ", MaxConcurrent: " + str(max_concurrent) + " spawn_new? " + str(len(processes) < max_concurrent) + "\n")
-                        if len(processes) >= max_concurrent:
-                            my_ret = True
-                break
-            except Exception as e:
-                Logger.log_exception(e)
-                time.sleep(1)
-                retry_count += 1
-    logging.debug("current_process_count: " + str(len(processes)) + ", MaxConcurrent: " + str(max_concurrent) + " spawn_new? " + str(len(processes) < max_concurrent) + "\n")
-    logging.debug("EXIT max_proceses_running'" + str(my_ret) + "'")
-    return my_ret
+@LogEntryAndExit(logging.getLogger())
+def is_max_process_count_reached():
+    if not os.path.isfile(process_file):
+        raise ValueError("Process file does not exist")
 
+    for i in range(max_retry_count):
+        try:
+            with open(process_file) as process_info:
+                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                processes = process_info.readlines()
+                if processes:
+                    logging.debug("current_process_count: " +
+                                  str(len(processes)) +
+                                  ", MaxConcurrent: " +
+                                  str(max_concurrent) +
+                                  " spawn_new? " +
+                                  str(len(processes) < max_concurrent) + "\n")
+                    return len(processes) >= max_concurrent
+                else:
+                    # Empty file - could it be?
+                    return False
+        except:
+            logging.debug(sys.exc_info()[0])
+            time.sleep(1)
+
+    if i == (max_retry_count -1):
+        logging.debug("Unable to open process file in max_process_running")
+        raise ValueError("Unable to open process file")
+
+@LogEntryAndExit(logging.getLogger())
 def add_process_running():
-    Logger.log_debug("ENTER add_process_running")
-    retry_count = 0
-    my_ret = False
-    while(True):
-        if retry_count > 10:
-            break
+    for i in range(max_retry_count):
         try:
             with open(process_file, 'a+') as process_info:
-                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
+                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 process_info.writelines(str(os.getpid()) + "\n")
-                my_ret = True
-            with open(process_file_persist, 'a+') as process_info:
-                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
-                process_info.writelines(str(os.getpid()) + "\n")
-            break
+            return
         except:
+           logging.debug(sys.exc_info()[0])
            time.sleep(1)
-           retry_count += 1 
-    Logger.log_debug("EXIT add_process_running'" + str(my_ret) + "'")
-    return my_ret
 
+    if i == (max_retry_count -1):
+        logging.debug("Unable to update process count in add_process_running")
+        raise ValueError("Unable to open process file")
+
+@LogEntryAndExit(logging.getLogger())
 def remove_process_running():
-    Logger.log_debug("ENTER remove_process_running")
-    retry_count = 0
-    my_ret = False
-    while(True):
-        if retry_count > 300:
-            break
+    for i in range(max_retry_count):
         try:
-            lines = []
             with open(process_file, 'r') as process_info:
-                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX)
+                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 lines = process_info.readlines()
             if lines:
+                lines.pop()
                 with open(process_file,'w') as process_info:
-                    fcntl.flock(process_file, fcntl.LOCK_EX)
-                    first_line = True
-                    for each_line in lines:
-                        if not first_line:
-                            process_info.writelines(each_line + "\n")
-                            first_line = False
-            my_ret = True
-            break
+                    fcntl.flock(process_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    process_info.writelines(lines)
+            else:
+                logging.debug("Was asked to remove a process record from an empty file")
+                raise ValueError("Was asked to remove a process record from an empty file")
         except:
-           time.sleep(1)
-           retry_count += 1 
-    Logger.log_debug("EXIT remove_process_running'" + str(my_ret) + "'")
+            logging.debug(sys.exc_info()[0])
+            time.sleep(1)
 
-def current_cpu_utilization():
-    Logger.log_debug("ENTER current_cpu_utilization")
-    my_ret = 2
-    # grab this from os.popen('uptime')
-    # TODO:
-    Logger.log_debug("EXIT current_cpu_utilization'" + str(my_ret) + "'")
-    return my_ret
+    if i == (max_retry_count -1):
+        logging.debug("Unable to update process count in add_process_running")
+        raise ValueError("Unable to open process file")
 
+
+@LogEntryAndExit(logging.getLogger())
 def can_do_work():
-    Logger.log_debug("ENTER can_do_work")
-    max_running = max_proceses_running()
-    my_ret = False
-    if not max_running:
-        my_ret = (current_cpu_utilization() < max_cpu_load)
-    Logger.log_debug("EXIT can_do_work: '" + str(my_ret) + "'")
-    return my_ret
+    return is_max_process_count_reached()
 
+@LogEntryAndExit(logging.getLogger())
 def get_work_available():
-    Logger.log_debug("ENTER get_work_available")
-    my_ret = get_stranded_work()
-    if not my_ret:
-        my_ret = get_new_work()
+    stranded_work = get_stranded_work()
+    if stranded_work:
+       return stranded_work()
 
-    Logger.log_debug("EXIT get_work_available: '" + str(my_ret) + "'")
-    return my_ret
+    return get_new_work
 
+@LogEntryAndExit(logging.getLogger())
 def get_new_work():
-    Logger.log_debug("ENTER get_new_work")
-    my_ret = ""
     potential_work_targets = glob.glob(potential_work_target_string)
     potential_work_targets.sort()
     if potential_work_targets:
         for each_potential_work_target in potential_work_targets:
             if not each_potential_work_target.endswith("_in_process"):
-                my_ret = take_ownership(each_potential_work_target, False)
-                if my_ret:
-                    break
-    Logger.log_debug("EXIT get_new_work: '" + str(my_ret) + "'")
-    return my_ret
+                ownership_state = take_ownership(each_potential_work_target, False)
+                if ownership_state:
+                    return ownership_state
 
+@LogEntryAndExit(logging.getLogger())
 def take_ownership(potential_work_target, ignore_prev_owner):
     Logger.log_debug("ENTER take_ownership")
     my_ret = None
@@ -208,12 +178,14 @@ def take_ownership(potential_work_target, ignore_prev_owner):
     Logger.log_debug("EXIT take_ownership: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def get_target_from_source(source_dir):
     Logger.log_debug("ENTER get_target_from_source")
     my_ret = source_dir.replace("staging","from")
     Logger.log_debug("EXIT get_target_from_source: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def get_stranded_work():
     Logger.log_debug("ENTER get_stranded_work")
     my_ret = None
@@ -230,6 +202,7 @@ def get_stranded_work():
     Logger.log_debug("EXIT get_stranded_work: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def get_original_source(ownership_path):
     Logger.log_debug("ENTER get_original_source")
     my_ret = ""
@@ -240,6 +213,7 @@ def get_original_source(ownership_path):
     Logger.log_debug("EXIT get_original_source: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def stale_heartbeat(ownership_path):
     Logger.log_debug("ENTER stale_heartbeat")
     my_ret = True
@@ -265,6 +239,7 @@ def stale_heartbeat(ownership_path):
     Logger.log_debug("EXIT stale_heartbeat: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def get_state(ownership_path):
     Logger.log_debug("ENTER get_state")
     my_ret = "Init"
@@ -276,15 +251,18 @@ def get_state(ownership_path):
     Logger.log_debug("EXIT get_state: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def get_ownership_path(path):
     Logger.log_debug("ENTER get_ownership_path")
     my_ret = path + "_in_process"
     Logger.log_debug("EXIT get_ownership_path: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def launch_script(script_path):
     os.system("python '" + script_path + "'")
 
+@LogEntryAndExit(logging.getLogger())
 def spawn_new_worker(should_wait):
     Logger.log_debug("ENTER spawn_new_worker")
     process_obj = Process(target=launch_script, args=(os.path.realpath(__file__),))
@@ -297,6 +275,7 @@ def spawn_new_worker(should_wait):
 
     Logger.log_debug("EXIT spawn_new_worker")
 
+@LogEntryAndExit(logging.getLogger())
 def perform_heartbeat(state):
     Logger.log_debug("ENTER perform_heartbeat")
     with open(state.hb_file,'w+') as hb_file:
@@ -306,7 +285,7 @@ def perform_heartbeat(state):
         hb_file.writelines(cur_hb_time_str)
     Logger.log_debug("EXIT perform_heartbeat")
 
-
+@LogEntryAndExit(logging.getLogger())
 def needs_copy(state):
     Logger.log_debug("ENTER needs_copy")
     my_ret = False
@@ -317,6 +296,7 @@ def needs_copy(state):
     Logger.log_debug("EXIT needs_copy: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def save_state(state):
     Logger.log_debug("ENTER save_state")
     perform_heartbeat(state)
@@ -324,6 +304,7 @@ def save_state(state):
         state_file.writelines(state.cur_state)
     Logger.log_debug("EXIT save_state")
 
+@LogEntryAndExit(logging.getLogger())
 def ascyn_fast_copy(source_dir, target_dir):
     Logger.log_debug("ENTER ascyn_fast_copy")
     my_ret = False
@@ -350,6 +331,7 @@ def ascyn_fast_copy(source_dir, target_dir):
     Logger.log_debug("EXIT ascyn_fast_copy: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def perform_fast_copy(source_dir, target_dir):
     Logger.log_debug("ENTER perform_fast_copy")
     my_ret = None
@@ -358,6 +340,7 @@ def perform_fast_copy(source_dir, target_dir):
     Logger.log_debug("EXIT perform_fast_copy: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def process_finished(process_obj):
     Logger.log_debug("ENTER process_finished")
     my_ret = True
@@ -366,6 +349,7 @@ def process_finished(process_obj):
     Logger.log_debug("EXIT process_finished: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def check_process_result(process_obj):
     Logger.log_debug("ENTER check_process_result")
     my_ret = False
@@ -374,6 +358,7 @@ def check_process_result(process_obj):
     Logger.log_debug("EXIT check_process_result: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def copy_original_to_staging(state):
     Logger.log_debug("ENTER copy_original_to_staging")
     my_ret = False
@@ -393,6 +378,7 @@ def copy_original_to_staging(state):
     Logger.log_debug("EXIT copy_original_to_staging: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def get_source_acls(source_dir):
     Logger.log_debug("ENTER get_source_acls")
     my_ret = None
@@ -402,12 +388,14 @@ def get_source_acls(source_dir):
     Logger.log_debug("EXIT get_source_acls: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def set_dest_acls(source_dir, acl):
     Logger.log_debug("ENTER set_dest_acls")
     my_ret = PAPI.set_aclonobj(source_dir, acl)
     Logger.log_debug("EXIT set_dest_acls: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def async_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER async_reacl")
     Logger.log_debug(source_dir)
@@ -436,6 +424,7 @@ def async_reacl(source_dir, dest_dir):
     Logger.log_debug("EXIT async_reacl: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def perform_fast_reacl(source_dir, dest_dir):
     Logger.log_debug("ENTER perform_fast_reacl")
     Logger.log_debug(source_dir)
@@ -446,6 +435,7 @@ def perform_fast_reacl(source_dir, dest_dir):
     Logger.log_debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def reacl_staging(state):
     Logger.log_debug("ENTER reacl_staging")
     my_ret = False
@@ -465,6 +455,7 @@ def reacl_staging(state):
     Logger.log_debug("EXIT reacl_staging: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def async_move(state):
     Logger.log_debug("ENTER async_move")
     my_ret = False
@@ -476,6 +467,7 @@ def async_move(state):
     Logger.log_debug("EXIT async_move: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def perform_fast_move(state):
     Logger.log_debug("ENTER perform_fast_move")
     my_ret = None
@@ -484,6 +476,7 @@ def perform_fast_move(state):
     Logger.log_debug("EXIT perform_fast_move: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def move_staging(state):
     Logger.log_debug("ENTER move_staging")
     my_ret = False
@@ -503,6 +496,7 @@ def move_staging(state):
     Logger.log_debug("EXIT move_staging: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def async_rmdir(dir):
     Logger.log_debug("ENTER async_rmdir")
 
@@ -510,6 +504,7 @@ def async_rmdir(dir):
 
     Logger.log_debug("EXIT async_rmdir")
 
+@LogEntryAndExit(logging.getLogger())
 def perform_fast_rmdir(source_dir):
     Logger.log_debug("ENTER perform_fast_rmdir")
     my_ret = False
@@ -520,6 +515,7 @@ def perform_fast_rmdir(source_dir):
     Logger.log_debug("EXIT perform_fast_rmdir: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def cleanup_staging(state):
     Logger.log_debug("ENTER cleanup_staging")
     my_ret = False
@@ -538,11 +534,12 @@ def cleanup_staging(state):
     Logger.log_debug("EXIT cleanup_staging: '" + str(my_ret) + "'")
     return my_ret
 
+@LogEntryAndExit(logging.getLogger())
 def print_success(state):
     Logger.log_debug("ENTER print_success")
     Logger.log_message("SUCCESS moved: '" + state.source_dir + "' to '" + state.target_dir + "'")
     Logger.log_debug("EXIT print_success")
-
+@LogEntryAndExit(logging.getLogger())
 def process_work(state):
     Logger.log_debug("ENTER process_work")
     while(True):
@@ -579,10 +576,8 @@ def process_work(state):
         break
     Logger.log_debug("EXIT process_work")
 
+@LogEntryAndExit(logging.getLogger())
 if __name__ == '__main__':
-    import logging
-    logging.basicConfig(filename='wip.log',level=logging.DEBUG)
-
     process_running_added = False
     try:
         if can_do_work():
@@ -594,9 +589,9 @@ if __name__ == '__main__':
                     spawn_new_worker(False)
                     process_work(my_work)
     except KeyboardInterrupt:
-        Logger.log_message("ctrl-c detected")
+        logging.debug("ctrl-c detected")
     except Exception as e:
-        Logger.log_exception(e)
+        logging.debug(e)
         raise
     finally:
         if process_running_added:
