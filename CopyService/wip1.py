@@ -11,15 +11,15 @@ import Common.papi as PAPI
 from multiprocessing import Process
 import logging
 
-# sys.path.append('/ifs/copy_svc/code/CopyService/aop')
+sys.path.append('/ifs/copy_svc/code/CopyService/aop')
+sys.path.append('/ifs/copy_svc/code/CopyService/locks')
 # from logstartandexit import LogEntryAndExit
+from locks.processpool import ProcessPool
 
 max_retry_count = 5
 max_concurrent = 5
 max_cpu_load = 50
 max_stale_hb_time_in_seconds = 30
-process_file = '/ifs/copy_svc/' + socket.gethostname() + '_process_list.dat'
-process_file_persist = '/ifs/copy_svc/' + socket.gethostname() + '_process_list_persist.dat'
 potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*"
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 process_state = {"Init": "Init", "CopyOrig": "CopyOrig", "ReAcl": "ReAcl", "Move": "Move", "Cleanup": "Cleanup"}
@@ -40,89 +40,8 @@ class state_obj:
                "Target" + self.target_dir + "\n" + \
                "ProcessDir:" + self.process_dir + "\n"
 
-def is_max_process_count_reached():
-    logging.debug("Entered is_max_process_count_reached")
-    assert os.path.exists(os.path.dirname(process_file)), "Process file directory not found"
-
-    # First call scenario - no file yet
-    if not os.path.isfile(process_file):
-        logging.debug("Returning False since process file does not exist")
-        return False
-
-    for i in range(max_retry_count):
-        try:
-            with open(process_file) as process_info:
-                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                processes = process_info.readlines()
-                assert len(processes) > 0, "Empty processes file in is_max_process reached"
-                assert len(processes) < max_concurrent + 1, "Exceeded max_concurrent processes value"
-                return len(processes) < max_concurrent
-        except IOError:
-            logging.debug(sys.exc_info()[0])
-            time.sleep(1)
-
-    # TODO: check if the value of i is retained here, should the function ever get here
-    assert i < max_retry_count, "Unable to open process file in max_process_running"
-
-def get_current_process_count():
-    logging.debug("Entered get_current_process_count")
-    assert os.path.exists(os.path.dirname(process_file)), "Process file directory not found"
-
-    # First call scenario - no file yet
-    if not os.path.isfile(process_file):
-        logging.debug("Returning 0 since process file does not exist")
-        return 0
-
-    with open(process_file) as process_info:
-        fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        processes = process_info.readlines()
-        if not processes:
-            return 0
-        else:
-            return len(processes)
-
-def increment_process_running_count():
-    logging.debug("Entered increment_process_running_count")
-    assert os.path.exists(os.path.dirname(process_file)), "Process file directory not found"
-
-    for i in range(max_retry_count):
-        try:
-            with open(process_file, 'a+') as process_info:
-                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                process_info.writelines(str(os.getpid()) + "\n")
-            logging.debug("Incremented process count")
-            return
-        except IOError:
-            logging.debug(sys.exc_info()[0])
-            time.sleep(1)
-
-    assert i < (max_retry_count), "Unable to update process count in add_process_running"
-
-def decrement_process_count():
-    assert os.path.exists(process_file), "Attempt to open a non-existing process file in decrement_process_count"
-    for i in range(max_retry_count):
-        try:
-            with open(process_file, 'r') as process_info:
-                fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                lines = process_info.readlines()
-                assert len(lines) > 0, "Was asked to remove a process from an empty file"
-                lines.pop()
-                with open(process_file, 'w') as process_info:
-                    fcntl.flock(process_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    process_info.writelines(lines)
-        except:
-            logging.debug(sys.exc_info()[0])
-            time.sleep(1)
-
-    if i == (max_retry_count - 1):
-        logging.debug("Unable to update process count in add_process_running")
-        raise ValueError("Unable to open process file")
-
-def can_do_work():
-    logging.debug("Entered can_do_work")
-    return is_max_process_count_reached()
-
 def get_work_available():
+    logging.debug("Entered get_work_available")
     stranded_work = get_stranded_work()
     if stranded_work:
         return stranded_work()
@@ -451,9 +370,11 @@ def process_work(state):
         return
 
 if __name__ == '__main__':
+    process_file = "/ifs/copy_svc/isilab-1_process_list1.dat"
+    process_pool = ProcessPool()
     try:
-        if can_do_work():
-            increment_process_running_count()
+        if not process_pool.is_max_process_count_reached():
+            process_pool.increment_process_running_count()
             my_work = get_work_available()
             if my_work:
                 perform_heartbeat(my_work)
@@ -465,5 +386,5 @@ if __name__ == '__main__':
         logging.debug(e)
         raise
     finally:
-        if get_current_process_count() > 0:
-            decrement_process_count()
+        if process_pool.get_current_process_count() > 0:
+            process_pool.decrement_process_count()
