@@ -1,3 +1,4 @@
+import ConfigParser
 import sys
 import socket
 import os
@@ -16,12 +17,18 @@ sys.path.append('/ifs/copy_svc/code/CopyService/locks')
 # from logstartandexit import LogEntryAndExit
 from locks.processpool import ProcessPool
 
-max_retry_count = 5
-max_concurrent = 5
-max_cpu_load = 50
-max_stale_hb_time_in_seconds = 30
-potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*"
-datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
+
+settings = ConfigParser.ConfigParser()
+settings.read('/ifs/copy_svc/config')
+
+max_retry_count = settings.get('Variables', 'Retry')
+max_concurrent = settings.get('Variables', 'Concurrent')
+max_cpu_load = settings.get('Variables', 'CPU')
+max_stale_hb_time_in_seconds = settings.get('Variables', 'Stale_HB')
+
+potential_work_target_string = settings.get('Paths', 'Work_target')
+datetime_format_string = settings.get('Variables', 'Formatter')
+
 process_state = {"Init": "Init", "CopyOrig": "CopyOrig", "ReAcl": "ReAcl", "Move": "Move", "Cleanup": "Cleanup"}
 
 logging.basicConfig(filename='wip.log', level=logging.DEBUG)
