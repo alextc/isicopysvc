@@ -10,7 +10,9 @@ import shutil
 import Common.papi as PAPI
 from multiprocessing import Process
 import logging
-from CopyService.aop.logstartandexit import LogEntryAndExit
+
+# sys.path.append('/ifs/copy_svc/code/CopyService/aop')
+# from logstartandexit import LogEntryAndExit
 
 max_retry_count = 5
 max_concurrent = 5
@@ -20,9 +22,10 @@ process_file = '/ifs/copy_svc/' + socket.gethostname() + '_process_list.dat'
 process_file_persist = '/ifs/copy_svc/' + socket.gethostname() + '_process_list_persist.dat'
 potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*"
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
-process_state = {"Init":"Init", "CopyOrig":"CopyOrig", "ReAcl":"ReAcl", "Move":"Move", "Cleanup":"Cleanup"}
+process_state = {"Init": "Init", "CopyOrig": "CopyOrig", "ReAcl": "ReAcl", "Move": "Move", "Cleanup": "Cleanup"}
 
-logging.basicConfig(filename='wip.log',level=logging.DEBUG)
+logging.basicConfig(filename='wip.log', level=logging.DEBUG)
+log = logging.getLogger("phase2_log")
 
 class state_obj:
     def __init__(self, state, source_dir, process_dir):
@@ -37,87 +40,95 @@ class state_obj:
                "Target" + self.target_dir + "\n" + \
                "ProcessDir:" + self.process_dir + "\n"
 
-@LogEntryAndExit(logging.getLogger())
 def is_max_process_count_reached():
+    logging.debug("Entered is_max_process_count_reached")
+    assert os.path.exists(os.path.dirname(process_file)), "Process file directory not found"
+
+    # First call scenario - no file yet
     if not os.path.isfile(process_file):
-        raise ValueError("Process file does not exist")
+        logging.debug("Returning False since process file does not exist")
+        return False
 
     for i in range(max_retry_count):
         try:
             with open(process_file) as process_info:
                 fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 processes = process_info.readlines()
-                if processes:
-                    logging.debug("current_process_count: " +
-                                  str(len(processes)) +
-                                  ", MaxConcurrent: " +
-                                  str(max_concurrent) +
-                                  " spawn_new? " +
-                                  str(len(processes) < max_concurrent) + "\n")
-                    return len(processes) >= max_concurrent
-                else:
-                    # Empty file - could it be?
-                    return False
-        except:
+                assert len(processes) > 0, "Empty processes file in is_max_process reached"
+                assert len(processes) < max_concurrent + 1, "Exceeded max_concurrent processes value"
+                return len(processes) < max_concurrent
+        except IOError:
             logging.debug(sys.exc_info()[0])
             time.sleep(1)
 
-    if i == (max_retry_count -1):
-        logging.debug("Unable to open process file in max_process_running")
-        raise ValueError("Unable to open process file")
+    # TODO: check if the value of i is retained here, should the function ever get here
+    assert i < max_retry_count, "Unable to open process file in max_process_running"
 
-@LogEntryAndExit(logging.getLogger())
-def add_process_running():
+def get_current_process_count():
+    logging.debug("Entered get_current_process_count")
+    assert os.path.exists(os.path.dirname(process_file)), "Process file directory not found"
+
+    # First call scenario - no file yet
+    if not os.path.isfile(process_file):
+        logging.debug("Returning 0 since process file does not exist")
+        return 0
+
+    with open(process_file) as process_info:
+        fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        processes = process_info.readlines()
+        if not processes:
+            return 0
+        else:
+            return len(processes)
+
+def increment_process_running_count():
+    logging.debug("Entered increment_process_running_count")
+    assert os.path.exists(os.path.dirname(process_file)), "Process file directory not found"
+
     for i in range(max_retry_count):
         try:
             with open(process_file, 'a+') as process_info:
                 fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 process_info.writelines(str(os.getpid()) + "\n")
+            logging.debug("Incremented process count")
             return
-        except:
-           logging.debug(sys.exc_info()[0])
-           time.sleep(1)
+        except IOError:
+            logging.debug(sys.exc_info()[0])
+            time.sleep(1)
 
-    if i == (max_retry_count -1):
-        logging.debug("Unable to update process count in add_process_running")
-        raise ValueError("Unable to open process file")
+    assert i < (max_retry_count), "Unable to update process count in add_process_running"
 
-@LogEntryAndExit(logging.getLogger())
-def remove_process_running():
+def decrement_process_count():
+    assert os.path.exists(process_file), "Attempt to open a non-existing process file in decrement_process_count"
     for i in range(max_retry_count):
         try:
             with open(process_file, 'r') as process_info:
                 fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 lines = process_info.readlines()
-            if lines:
+                assert len(lines) > 0, "Was asked to remove a process from an empty file"
                 lines.pop()
-                with open(process_file,'w') as process_info:
+                with open(process_file, 'w') as process_info:
                     fcntl.flock(process_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     process_info.writelines(lines)
-            else:
-                logging.debug("Was asked to remove a process record from an empty file")
-                raise ValueError("Was asked to remove a process record from an empty file")
         except:
             logging.debug(sys.exc_info()[0])
             time.sleep(1)
 
-    if i == (max_retry_count -1):
+    if i == (max_retry_count - 1):
         logging.debug("Unable to update process count in add_process_running")
         raise ValueError("Unable to open process file")
 
-@LogEntryAndExit(logging.getLogger())
 def can_do_work():
+    logging.debug("Entered can_do_work")
     return is_max_process_count_reached()
 
-@LogEntryAndExit(logging.getLogger())
 def get_work_available():
     stranded_work = get_stranded_work()
     if stranded_work:
-       return stranded_work()
+        return stranded_work()
 
     return get_new_work
 
-@LogEntryAndExit(logging.getLogger())
 def get_new_work():
     potential_work_targets = glob.glob(potential_work_target_string)
     potential_work_targets.sort()
@@ -128,7 +139,6 @@ def get_new_work():
                 if ownership_state:
                     return ownership_state
 
-@LogEntryAndExit(logging.getLogger())
 def take_ownership(potential_work_target, ignore_prev_owner):
     expected_target_staging_dir = potential_work_target + "_in_process"
 
@@ -141,10 +151,9 @@ def take_ownership(potential_work_target, ignore_prev_owner):
     else:
         write_ownership_markers(potential_work_target)
 
-    state = state_obj(state="Init", source_dir=potential_work_target, process_dir=expected_target_staging_dir )
+    state = state_obj(state="Init", source_dir=potential_work_target, process_dir=expected_target_staging_dir)
     return state
 
-@LogEntryAndExit(logging.getLogger())
 def write_ownership_markers(potential_work_target):
     expected_target_staging_dir = potential_work_target + "_in_process"
     expected_hb_file = expected_target_staging_dir + "/hb.dat"
@@ -156,7 +165,7 @@ def write_ownership_markers(potential_work_target):
             with open(expected_owner_file, 'w+') as owner_file:
                 fcntl.flock(expected_owner_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
-            with open(expected_hb_file,'w+') as hb_file:
+            with open(expected_hb_file, 'w+') as hb_file:
                 fcntl.flock(hb_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                 hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
             with open(expected_source_file, 'w+') as source_file:
@@ -169,12 +178,10 @@ def write_ownership_markers(potential_work_target):
     if i == (max_retry_count - 1):
         raise ValueError("Unable to write ownership markers")
 
-@LogEntryAndExit(logging.getLogger())
 def get_target_from_source(source_dir):
-    my_ret = source_dir.replace("staging","from")
+    my_ret = source_dir.replace("staging", "from")
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def get_stranded_work():
     potential_strand_targets = glob.glob(potential_work_target_string)
     potential_strand_targets.sort()
@@ -187,7 +194,6 @@ def get_stranded_work():
                         my_ret.cur_state = get_state(each_potential_strand_target)
                         return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def get_original_source(ownership_path):
     original_source = ownership_path + "/source.dat"
     if os.path.exists(original_source):
@@ -197,7 +203,6 @@ def get_original_source(ownership_path):
 
     raise ValueError("Unable to get orignal source path")
 
-@LogEntryAndExit(logging.getLogger())
 def is_heartbeat_stale(ownership_path):
     hb_file = ownership_path + "/hb.dat"
     if not os.path.exists(hb_file):
@@ -216,10 +221,9 @@ def is_heartbeat_stale(ownership_path):
         except:
             logging.debug(sys.exc_info()[0])
 
-    if i == (max_retry_count -1):
+    if i == (max_retry_count - 1):
         raise ValueError("Unable to check heartbeat")
 
-@LogEntryAndExit(logging.getLogger())
 def get_state(ownership_path):
     if not os.path.exists(ownership_path):
         raise ValueError("Request to check state on a state.dat failed")
@@ -229,13 +233,11 @@ def get_state(ownership_path):
         my_ret = state_file.readline()
         if not my_ret:
             raise ValueError("No state found")
-        return  my_ret
+        return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def launch_script(script_path):
     os.system("python '" + script_path + "'")
 
-@LogEntryAndExit(logging.getLogger())
 def spawn_new_worker(should_wait):
     process_obj = Process(target=launch_script, args=(os.path.realpath(__file__),))
     process_obj.start()
@@ -245,27 +247,23 @@ def spawn_new_worker(should_wait):
     else:
         logging.debug("spawning new instance of script and not waiting")
 
-@LogEntryAndExit(logging.getLogger())
 def perform_heartbeat(state):
-    with open(state.hb_file,'w+') as hb_file:
+    with open(state.hb_file, 'w+') as hb_file:
         fcntl.flock(hb_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         cur_hb_time_str = datetime.datetime.utcnow().strftime(datetime_format_string)
         logging.de.log_debug("Current HB time: '" + cur_hb_time_str + "'")
         hb_file.writelines(cur_hb_time_str)
 
-@LogEntryAndExit(logging.getLogger())
 def needs_copy(state):
     perform_heartbeat(state)
     if os.path.exists(state.target_dir):
         return True
 
-@LogEntryAndExit(logging.getLogger())
 def save_state(state):
     perform_heartbeat(state)
-    with open(state.state_file,'w+') as state_file:
+    with open(state.state_file, 'w+') as state_file:
         state_file.writelines(state.cur_state)
 
-@LogEntryAndExit(logging.getLogger())
 def async_copy(source_dir, target_dir):
     for src_dir, dirs, files in os.walk(source_dir):
         dst_dir = src_dir.replace(source_dir, target_dir)
@@ -286,31 +284,27 @@ def async_copy(source_dir, target_dir):
             else:
                 shutil.copy(src_file, dst_dir)
 
-@LogEntryAndExit(logging.getLogger())
 def perform_fast_copy(source_dir, target_dir):
-    my_ret = Process(target=async_copy, args=(source_dir,target_dir))
+    my_ret = Process(target=async_copy, args=(source_dir, target_dir))
     my_ret.start()
 
-@LogEntryAndExit(logging.getLogger())
 def process_finished(process_obj):
     if process_obj.is_alive():
         my_ret = False
     logging.debug("EXIT process_finished: '" + str(my_ret) + "'")
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def check_process_result(process_obj):
     if process_obj:
         my_ret = (process_obj.exitcode == 0)
     logging.debug("EXIT check_process_result: '" + str(my_ret) + "'")
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def copy_original_to_staging(state):
     copy_process_obj = perform_fast_copy(state.target_dir, state.source_dir)
 
     # TODO: does the fact of completing a copy terminates the process; Will this run forever?
-    while(True):
+    while (True):
         perform_heartbeat(state)
         if process_finished(copy_process_obj):
             break
@@ -319,7 +313,6 @@ def copy_original_to_staging(state):
     my_ret = check_process_result(copy_process_obj)
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def get_source_acls(source_dir):
     acl_string = PAPI.grab_aclfromobj(source_dir)
     if acl_string:
@@ -328,13 +321,11 @@ def get_source_acls(source_dir):
 
     raise ValueError("Unable to get ACL template")
 
-@LogEntryAndExit(logging.getLogger())
 def set_dest_acls(source_dir, acl):
     my_ret = PAPI.set_aclonobj(source_dir, acl)
     logging.debug("EXIT set_dest_acls: '" + str(my_ret) + "'")
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def async_reacl(source_dir, dest_dir):
     logging.debug(source_dir)
     logging.debug(dest_dir)
@@ -355,13 +346,12 @@ def async_reacl(source_dir, dest_dir):
             result = set_dest_acls(os.path.join(root, name), acls)
             if result:
                 error_hit = True
-    
+
     if not error_hit:
         my_ret = True
 
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def perform_fast_reacl(source_dir, dest_dir):
     logging.debug(source_dir)
     logging.debug(dest_dir)
@@ -370,7 +360,6 @@ def perform_fast_reacl(source_dir, dest_dir):
     logging.debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def reacl_staging(state):
     reacl_process_obj = perform_fast_reacl(os.path.split(state.target_dir)[0], state.source_dir)
 
@@ -383,7 +372,6 @@ def reacl_staging(state):
     my_ret = check_process_result(reacl_process_obj)
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def async_move(state):
     if os.path.exists(state.target_dir):
         shutil.move(state.target_dir, state.process_dir + "/old_source_dir")
@@ -392,16 +380,14 @@ def async_move(state):
     my_ret = True
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def perform_fast_move(state):
     my_ret = Process(target=async_move, args=(state,))
     my_ret.start()
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def move_staging(state):
     move_process_obj = perform_fast_move(state)
-    while(True):
+    while (True):
         perform_heartbeat(state)
         if process_finished(move_process_obj):
             break
@@ -410,22 +396,19 @@ def move_staging(state):
     my_ret = check_process_result(move_process_obj)
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
-def async_rmdir(dir):
-    shutil.rmtree(dir)
+def async_rmdir(directory):
+    shutil.rmtree(directory)
 
-@LogEntryAndExit(logging.getLogger())
 def perform_fast_rmdir(source_dir):
     my_ret = Process(target=async_rmdir, args=(source_dir,))
     my_ret.start()
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def cleanup_staging(state):
     cleanup_process_obj = perform_fast_rmdir(state.process_dir)
 
     # TODO: Does the process exist after completing the func call - this may run forever
-    while(True):
+    while (True):
         if process_finished(cleanup_process_obj):
             break
         time.sleep(1)
@@ -433,9 +416,8 @@ def cleanup_staging(state):
     my_ret = check_process_result(cleanup_process_obj)
     return my_ret
 
-@LogEntryAndExit(logging.getLogger())
 def process_work(state):
-    while(True):
+    while True:
         if state.cur_state == "Init":
             if needs_copy(state):
                 state.cur_state = "CopyOrig"
@@ -446,7 +428,7 @@ def process_work(state):
             else:
                 state.cur_state = "ReAcl"
                 save_state(state)
-        
+
         if state.cur_state == "CopyOrig":
             if copy_original_to_staging(state):
                 state.cur_state = "ReAcl"
@@ -468,11 +450,10 @@ def process_work(state):
         # All stages completed exit
         return
 
-
 if __name__ == '__main__':
     try:
         if can_do_work():
-            add_process_running()
+            increment_process_running_count()
             my_work = get_work_available()
             if my_work:
                 perform_heartbeat(my_work)
@@ -484,4 +465,5 @@ if __name__ == '__main__':
         logging.debug(e)
         raise
     finally:
-        remove_process_running()
+        if get_current_process_count() > 0:
+            decrement_process_count()
