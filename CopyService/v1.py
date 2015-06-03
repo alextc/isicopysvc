@@ -10,6 +10,7 @@ import sys
 import datetime
 import re
 import errno
+import Common.papi as PAPI
 
 
 trigger_interval_in_seconds = 60
@@ -17,8 +18,6 @@ persistence_file = "/ifs/copy_svc/persistence.file"
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 database = "/ifs/copy_svc/openfiles.db"
 copy_svc_paths = glob.glob("/ifs/zones/*/copy_svc/to/*/*")
-if copy_svc_paths:
-    print copy_svc_paths
 
 
 def flip_slashes():
@@ -27,7 +26,6 @@ def flip_slashes():
         new_element = "C:" + each_element.replace("/", "\\")
         temp_list.append(new_element)
     return temp_list
-        
 
 def process_command_line():
     parser = optparse.OptionParser()
@@ -46,32 +44,11 @@ def process_command_line():
 
     return(options)
 
-def papi_action(action, url_parts, query_dict={}, header_dict={}, body_data='', timeout=120):
-    response = isi.rest.send_rest_request(
-        socket_path = isi.rest.PAPI_SOCKET_PATH,
-        method = action,
-        uri = url_parts,
-        query_args = query_dict,
-        headers = header_dict,
-        body = body_data,
-        timeout = timeout
-    )
-    return response
-
-
-def grab_openfiles():
-    url_parts = ['1', 'protocols', 'smb', 'openfiles']
-    # NOTE:  Although definition for papi_action gives us whole tuple from GET, 
-    # here we only put to use the third element (aka [2]) of the tuple which has everything we need
-    return papi_action('GET', url_parts)[2]
-
-
 def print_errors(response_json):
     if response_json.has_key('errors'):
         errors = response_json['errors']
         for e in errors:
             print e['message']
-
 
 def drop_table():
     try:
@@ -105,8 +82,6 @@ def delete_entry_from_database(path):
     c.execute(sql_delete_query)
     conn.commit()
     conn.close()
-
- 
 
 def process_persistence_file():
     with open(persistence_file) as persistence:
@@ -158,7 +133,7 @@ def delete_persistence_file():
 
 def fill_persistence_file():
     try:
-        open_files = grab_openfiles() 
+        open_files = PAPI.grab_smbopenfiles() 
         right_now = datetime.datetime.utcnow()
         if open_files:
             with open(persistence_file, 'w') as persistence:
@@ -172,7 +147,6 @@ def get_triggered_file():
     conn = sqlite3.connect(database)
     c = conn.cursor()
     sql_grab_diffs_query = "select * from openfiles where (strftime('%s', 'now') - strftime('%s', last_seen)) > " + str(trigger_interval_in_seconds)
-    print sql_grab_diffs_query
     c.execute(sql_grab_diffs_query)
     return c.fetchall()
     conn.close()
@@ -201,14 +175,14 @@ def restart_script():
     pass
 
 try:
-
-
     options = process_command_line()
     debug   = options.debug
     verbose = options.verbose
 
     if debug:
         print vars(options)
+        if copy_svc_paths:
+            print copy_svc_paths
 
     copy_svc_paths = flip_slashes()
 

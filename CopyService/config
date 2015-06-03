@@ -1,0 +1,35 @@
+[Logging]
+Level:   CRITICIAL
+
+[Paths]
+# Container for config, scripts, working files
+Root:  /ifs/copy_svc
+log_dir:  %(Root)s/logdir
+
+Database:  %(Root)s/openfiles.db
+Find_HB:   %(Root)s/find_dirs_hb.dat
+Process:   %(Root)s/process_list.dat
+Persistence:  %(Root)s/persistence.file
+Process_persists:  %(Root)s/process_list_persist.dat
+
+Service: /ifs/zones/*/copy_svc
+Glob:    %(Service)s/to/*/*
+Work:    staging/*/*
+
+[Intervals]
+# How long to wait for no write seen
+Watcher:  600
+
+# Delay prior to restarting script
+Restart:  1
+
+# Point at which heartbeat considered stale
+Stale:  30
+
+[Variables]
+# Max number of allowed concurrent python instances working
+Concurrent:  5
+
+# Max CPU to be considered viable to do work
+CPU:  50
+
