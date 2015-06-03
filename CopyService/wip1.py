@@ -1,10 +1,9 @@
 import ConfigParser
-import sys
-import socket
 import os
 import time
 import fcntl
 import datetime
+import socket
 import json
 import glob
 import shutil
@@ -14,8 +13,10 @@ import logging
 from work.processpool import ProcessPool
 from work.workscheduler import WorkScheduler
 from model.workstate import WorkState
+from sql.heartbeatdb import HeartBeatDb
 
-
+"""
+# Getting Config.Parser.NoSectoinError: No section: Varaiables
 settings = ConfigParser.ConfigParser()
 settings.read('/ifs/copy_svc/config')
 
@@ -27,6 +28,9 @@ max_stale_hb_time_in_seconds = settings.get('Variables', 'Stale_HB')
 potential_work_target_string = settings.get('Paths', 'Work_target')
 datetime_format_string = settings.get('Variables', 'Formatter')
 
+"""
+potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*/"
+datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 process_state = {"Init": "Init", "CopyOrig": "CopyOrig", "ReAcl": "ReAcl", "Move": "Move", "Cleanup": "Cleanup"}
 logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG)
 
@@ -37,18 +41,8 @@ def get_work_available():
     if stranded_work:
         return stranded_work()
 
-    return get_new_work
+    return work_scheduler.get_new_work()
 
-def get_new_work():
-    work_scheduler = WorkScheduler()
-    potential_work_targets = glob.glob(potential_work_target_string)
-    potential_work_targets.sort()
-    if potential_work_targets:
-        for each_potential_work_target in potential_work_targets:
-            if not each_potential_work_target.endswith("_in_process"):
-                ownership_state = work_scheduler.take_ownership(each_potential_work_target, False)
-                if ownership_state:
-                    return ownership_state
 
 def launch_script(script_path):
     os.system("python '" + script_path + "'")
@@ -63,11 +57,11 @@ def spawn_new_worker(should_wait):
         logging.debug("spawning new instance of script and not waiting")
 
 def perform_heartbeat(state):
-    with open(state.hb_file, 'w+') as hb_file:
-        fcntl.flock(hb_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        cur_hb_time_str = datetime.datetime.utcnow().strftime(datetime_format_string)
-        logging.de.log_debug("Current HB time: '" + cur_hb_time_str + "'")
-        hb_file.writelines(cur_hb_time_str)
+    # TODO: Optimize - probably better to pass db connection object instead of newing this up every second
+    heart_beat_db_path = "/ifs/copy_svc/" + socket.gethostname() + "_heartbeat.db"
+    heart_beat_db = HeartBeatDb(heart_beat_db_path)
+    heart_beat_db.write_heart_beat()
+    logging.debug("Heartbeat DB dump: {0}".format(heart_beat_db.dump()))
 
 def needs_copy(state):
     perform_heartbeat(state)
@@ -266,22 +260,11 @@ def process_work(state):
         return
 
 if __name__ == '__main__':
-    process_file = "/ifs/copy_svc/isilab-1_process_list1.dat"
     process_pool = ProcessPool()
-    try:
-        if not process_pool.is_max_process_count_reached():
-            process_pool.increment_process_running_count()
-            my_work = get_work_available()
-            if my_work:
-                perform_heartbeat(my_work)
-                spawn_new_worker(False)
-                process_work(my_work)
-    except KeyboardInterrupt:
-        logging.debug("ctrl-c detected")
-    except Exception as e:
-        logging.debug(e)
-        raise
-    finally:
-        logging.debug("Entering Finally in Main")
-        if process_pool.get_current_process_count() > 0:
-            process_pool.decrement_process_count()
+    if not process_pool.is_max_process_count_reached():
+        my_work = get_work_available()
+        if my_work:
+            perform_heartbeat(my_work)
+            # Making this work with single thread for now
+            # spawn_new_worker(False)
+            process_work(my_work)

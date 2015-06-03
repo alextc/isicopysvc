@@ -8,13 +8,32 @@ import time
 import sys
 import socket
 from model.workstate import WorkState
+from sql.heartbeatdb import HeartBeatDb
 
 class WorkScheduler(object):
     def __init__(self):
         self._work_in_progress_path = "/ifs/zones/*/copy_svc/staging/*/*/"
+        self._work_source = "/ifs/zones/*/copy_svc/staging/*/*"
         self._max_retry_count = 5
         self._datetime_format = '%Y, %m, %d, %H, %M, %S, %f'
         self._max_stale_hb_time_in_seconds = 30
+
+    def get_new_work(self):
+        logging.debug("Entered get_new_work")
+        potential_work_targets = glob.glob(self._work_source)
+        if not potential_work_targets:
+            logging.debug("No new or stranded work: exiting")
+            return
+
+        # TODO: try applying filter first; what happens is the list if empty to start with
+        filter(lambda x: x.endswith("_in_process"), potential_work_targets)
+        if not potential_work_targets:
+            logging.debug("No new work: exiting")
+            return
+
+        for potential_work_target in potential_work_targets:
+            state =  self.take_ownership(potential_work_target, False)
+            logging.debug("Found new work item {0}".format(state))
 
     def get_stranded_work(self):
         logging.debug("Entered get_stranded_work")
@@ -30,31 +49,19 @@ class WorkScheduler(object):
         logging.debug("Located stranded folders:\n{0}".format("\n".join(potential_stranded_targets)))
 
         for potential_strand_target in potential_stranded_targets:
-            if self.is_heartbeat_stale(potential_strand_target):
+            if self.is_heartbeat_stale():
                 self.take_ownership(self.get_original_source(potential_strand_target), True)
                 state = self.get_state(potential_strand_target)
                 logging.debug("returning {0}", state)
                 return state
 
-    def is_heartbeat_stale(self, ownership_path):
-        hb_file = ownership_path + "/hb.dat"
-        if not os.path.exists(hb_file):
-            raise ValueError("Request to check heart beat on a non-existing hb.dat")
+    def is_heartbeat_stale(self):
+        logging.debug("Entered is_heartbeat_stale")
+        heart_beat_db = HeartBeatDb("/ifs/copy_svc/" + socket.gethostname() + "_heartbeat.db")
+        heart_beat = heart_beat_db.get_heart_beat()
+        logging.debug("Got heartbeat {0}".format(heart_beat))
 
-        for i in range(self._max_retry_count):
-            try:
-                with open(hb_file) as last_heartbeat:
-                    fcntl.flock(last_heartbeat.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    last_hb_time = last_heartbeat.readline().strip()
-                    if last_hb_time:
-                        last_hb_datetime = datetime.datetime.strptime(last_hb_time, self._datetime_format)
-                        return (datetime.datetime.utcnow() - last_hb_datetime).seconds > self._max_stale_hb_time_in_seconds
-                time.sleep(1)
-            except IOError:
-                logging.debug(sys.exc_info()[0])
 
-        if i == (self._max_retry_count - 1):
-            raise ValueError("Unable to check heartbeat")
 
     def take_ownership(self, potential_work_target, ignore_prev_owner):
         expected_target_staging_dir = potential_work_target + "_in_process"
@@ -64,9 +71,9 @@ class WorkScheduler(object):
             return
         elif not os.path.exists(expected_target_staging_dir):
             os.mkdir(expected_target_staging_dir)
-            self._write_ownership_markers(potential_work_target)
+            self.write_ownership_markers(potential_work_target)
         else:
-            self._write_ownership_markers(potential_work_target)
+            self.write_ownership_markers(potential_work_target)
 
         state = WorkState(state="Init", source_dir=potential_work_target, process_dir=expected_target_staging_dir)
         return state
@@ -80,16 +87,17 @@ class WorkScheduler(object):
         for i in range(self._max_retry_count):
             try:
                 with open(expected_owner_file, 'w+') as owner_file:
-                    fcntl.flock(expected_owner_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(owner_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                     owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
                 with open(expected_hb_file, 'w+') as hb_file:
                     fcntl.flock(hb_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    hb_file.writelines(datetime.datetime.utcnow().strftime(self.datetime_format_string))
+                    hb_file.writelines(datetime.datetime.utcnow().strftime(self._datetime_format))
                 with open(expected_source_file, 'w+') as source_file:
                     fcntl.flock(source_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                     source_file.writelines(potential_work_target)
-            except IOError:
-                logging.debug(sys.exc_info()[0])
+                return
+            except IOError as e:
+                logging.debug(e.message)
                 time.sleep(1)
 
         if i == (self._max_retry_count - 1):
