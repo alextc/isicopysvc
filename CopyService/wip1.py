@@ -12,7 +12,7 @@ from multiprocessing import Process
 import logging
 from work.processpool import ProcessPool
 from work.workscheduler import WorkScheduler
-from model.workstate import WorkState
+from model.phase2workitem import Phase2WorkItem
 from sql.heartbeatdb import HeartBeatDb
 
 """
@@ -37,12 +37,11 @@ logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG)
 def get_work_available():
     logging.debug("Entered get_work_available")
     work_scheduler = WorkScheduler()
-    stranded_work = work_scheduler.get_stranded_work()
+    stranded_work = work_scheduler.try_to_get_stranded_work()
     if stranded_work:
         return stranded_work()
 
-    return work_scheduler.get_new_work()
-
+    return work_scheduler.try_get_new_phase2_work_item()
 
 def launch_script(script_path):
     os.system("python '" + script_path + "'")

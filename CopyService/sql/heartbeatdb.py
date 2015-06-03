@@ -1,36 +1,33 @@
 __author__ = 'alextc'
 import sqlite3
-import os
 from datetime import datetime
 
 class HeartBeatDb:
-    def __init__(self, data_file_path):
-        if not os.path.exists(os.path.dirname(data_file_path)):
-            raise ValueError("Directory does not exist '{}'".format(os.path.dirname(data_file_path)))
-
-        self._data_file_path = data_file_path
+    def __init__(self):
+        self._data_file_path = "/ifs/copy_svc/heartbeat.db"
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='heartbeats'")
             result = cursor.fetchone();
             if not result:
-                cursor.execute("CREATE TABLE heartbeats (heartbeat timestamp NOT NULL)")
+                cursor.execute("CREATE TABLE heartbeats "
+                               "(directory TEXT NOT NULL PRIMARY KEY, host TEXT NOT NULL, heartbeat timestamp NOT NULL)")
 
-    def write_heart_beat(self):
+    def write_heart_beat(self, directory, host):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             now = datetime.now()
-            cursor.execute("DELETE from heartbeats")
-            cursor.execute('INSERT into heartbeats (heartbeat) VALUES (?)', (now,))
+            cursor.execute('INSERT OR REPLACE into heartbeats (directory, host, heartbeat) VALUES (?,?,?)',
+                           (directory, host, now,))
 
-    def get_heart_beat(self):
+    def get_heart_beat(self, directory):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
-            cursor.execute('SELECT * FROM heartbeats')
+            cursor.execute('SELECT * FROM heartbeats WHERE directory = (?)', (directory,))
             result = cursor.fetchone()
 
         if result:
-            return result[0]
+            return {'directory': result[0], 'host': result[1], 'heart_beat': result[2]}
 
     def dump(self):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
