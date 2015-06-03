@@ -25,8 +25,11 @@ class ProcessPool(object):
                     fcntl.flock(process_pool_entrance_lock_handle.fileno(), fcntl.LOCK_EX)
 
                     num_of_running_instances = ps.get_number_of_running_instances()
+                    assert num_of_running_instances > 0, "num_of_running_insances can't be 0"
+
                     logging.debug("ps returned {0}".format(num_of_running_instances))
-                    is_max_reached = num_of_running_instances >= self._max_concurrent
+                    # -1 is for not counting the running script, since it has not become a working process yet
+                    is_max_reached = (num_of_running_instances -1) >= self._max_concurrent
                     logging.debug("is_max_process_count_reached returning {0}".format(is_max_reached))
                     return is_max_reached
 

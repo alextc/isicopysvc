@@ -13,12 +13,12 @@ class HeartBeatDb:
                 cursor.execute("CREATE TABLE heartbeats "
                                "(directory TEXT NOT NULL PRIMARY KEY, host TEXT NOT NULL, heartbeat timestamp NOT NULL)")
 
-    def write_heart_beat(self, directory, host):
+    def write_heart_beat(self, work_item):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             now = datetime.now()
             cursor.execute('INSERT OR REPLACE into heartbeats (directory, host, heartbeat) VALUES (?,?,?)',
-                           (directory, host, now,))
+                           (work_item.source_dir, work_item.host, now,))
 
     def get_heart_beat(self, directory):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
@@ -27,7 +27,7 @@ class HeartBeatDb:
             result = cursor.fetchone()
 
         if result:
-            return {'directory': result[0], 'host': result[1], 'heart_beat': result[2]}
+            return {'directory': result[0], 'host': result[1], 'heartbeat': result[2]}
 
     def dump(self):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:

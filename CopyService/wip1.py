@@ -1,18 +1,13 @@
 import ConfigParser
 import os
 import time
-import fcntl
-import datetime
-import socket
 import json
-import glob
 import shutil
 import Common.papi as PAPI
 from multiprocessing import Process
 import logging
 from work.processpool import ProcessPool
 from work.workscheduler import WorkScheduler
-from model.phase2workitem import Phase2WorkItem
 from sql.heartbeatdb import HeartBeatDb
 
 """
@@ -37,9 +32,10 @@ logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG)
 def get_work_available():
     logging.debug("Entered get_work_available")
     work_scheduler = WorkScheduler()
-    stranded_work = work_scheduler.try_to_get_stranded_work()
-    if stranded_work:
-        return stranded_work()
+    # Ignoring stranded work for now
+    # stranded_work = work_scheduler.try_to_get_stranded_work()
+    # if stranded_work:
+    #    return stranded_work()
 
     return work_scheduler.try_get_new_phase2_work_item()
 
@@ -55,22 +51,19 @@ def spawn_new_worker(should_wait):
     else:
         logging.debug("spawning new instance of script and not waiting")
 
-def perform_heartbeat(state):
-    # TODO: Optimize - probably better to pass db connection object instead of newing this up every second
-    heart_beat_db_path = "/ifs/copy_svc/" + socket.gethostname() + "_heartbeat.db"
-    heart_beat_db = HeartBeatDb(heart_beat_db_path)
-    heart_beat_db.write_heart_beat()
+def perform_heartbeat(work_item):
+    heart_beat_db = HeartBeatDb()
+    heart_beat_db.write_heart_beat(work_item)
     logging.debug("Heartbeat DB dump: {0}".format(heart_beat_db.dump()))
 
-def needs_copy(state):
-    perform_heartbeat(state)
-    if os.path.exists(state.target_dir):
+def needs_copy(work_item):
+    perform_heartbeat(work_item)
+    if os.path.exists(work_item.get_target_dir()):
         return True
 
-def save_state(state):
-    perform_heartbeat(state)
-    with open(state.state_file, 'w+') as state_file:
-        state_file.writelines(state.cur_state)
+def save_state(work_item):
+    #TODO: This used to write to disk; Replace with SQL ???
+    pass
 
 def async_copy(source_dir, target_dir):
     for src_dir, dirs, files in os.walk(source_dir):
@@ -97,10 +90,7 @@ def perform_fast_copy(source_dir, target_dir):
     my_ret.start()
 
 def process_finished(process_obj):
-    if process_obj.is_alive():
-        my_ret = False
-    logging.debug("EXIT process_finished: '" + str(my_ret) + "'")
-    return my_ret
+    return process_obj.is_alive()
 
 def check_process_result(process_obj):
     if process_obj:
@@ -108,12 +98,12 @@ def check_process_result(process_obj):
     logging.debug("EXIT check_process_result: '" + str(my_ret) + "'")
     return my_ret
 
-def copy_original_to_staging(state):
-    copy_process_obj = perform_fast_copy(state.target_dir, state.source_dir)
+def copy_original_to_staging(work_item):
+    copy_process_obj = perform_fast_copy(work_item.target_dir, work_item.source_dir)
 
     # TODO: does the fact of completing a copy terminates the process; Will this run forever?
     while (True):
-        perform_heartbeat(state)
+        perform_heartbeat(work_item)
         if process_finished(copy_process_obj):
             break
         time.sleep(1)
@@ -156,9 +146,9 @@ def async_reacl(source_dir, dest_dir):
                 error_hit = True
 
     if not error_hit:
-        my_ret = True
+        return True
 
-    return my_ret
+    return False
 
 def perform_fast_reacl(source_dir, dest_dir):
     logging.debug(source_dir)
@@ -168,11 +158,11 @@ def perform_fast_reacl(source_dir, dest_dir):
     logging.debug("EXIT perform_fast_reacl: '" + str(my_ret) + "'")
     return my_ret
 
-def reacl_staging(state):
-    reacl_process_obj = perform_fast_reacl(os.path.split(state.target_dir)[0], state.source_dir)
+def reacl_staging(work_item):
+    reacl_process_obj = perform_fast_reacl(os.path.split(work_item.get_target_dir())[0], work_item.source_dir)
 
     while True:
-        perform_heartbeat(state)
+        perform_heartbeat(work_item)
         if process_finished(reacl_process_obj):
             break
         time.sleep(1)
@@ -193,10 +183,10 @@ def perform_fast_move(state):
     my_ret.start()
     return my_ret
 
-def move_staging(state):
-    move_process_obj = perform_fast_move(state)
+def move_staging(work_item):
+    move_process_obj = perform_fast_move(work_item)
     while (True):
-        perform_heartbeat(state)
+        perform_heartbeat(work_item)
         if process_finished(move_process_obj):
             break
         time.sleep(1)
@@ -224,36 +214,36 @@ def cleanup_staging(state):
     my_ret = check_process_result(cleanup_process_obj)
     return my_ret
 
-def process_work(state):
+def process_work(work_item):
     while True:
-        if state.cur_state == "Init":
-            if needs_copy(state):
-                state.cur_state = "CopyOrig"
-                save_state(state)
-                if copy_original_to_staging(state):
-                    state.cur_state = "ReAcl"
-                    save_state(state)
+        if work_item.state == "Init":
+            if needs_copy(work_item):
+                work_item.state = "CopyOrig"
+                save_state(work_item)
+                if copy_original_to_staging(work_item):
+                    work_item.state = "ReAcl"
+                    save_state(work_item)
             else:
-                state.cur_state = "ReAcl"
-                save_state(state)
+                work_item.state = "ReAcl"
+                save_state(work_item)
 
-        if state.cur_state == "CopyOrig":
-            if copy_original_to_staging(state):
-                state.cur_state = "ReAcl"
-                save_state(state)
+        if work_item.state == "CopyOrig":
+            if copy_original_to_staging(work_item):
+                work_item.state = "ReAcl"
+                save_state(work_item)
 
-        if state.cur_state == "ReAcl":
-            if reacl_staging(state):
-                state.cur_state = "Move"
-                save_state(state)
+        if work_item.state == "ReAcl":
+            if reacl_staging(work_item):
+                work_item.state = "Move"
+                save_state(work_item)
 
-        if state.cur_state == "Move":
-            if move_staging(state):
-                state.cur_state = "Cleanup"
-                save_state(state)
+        if work_item.state == "Move":
+            if move_staging(work_item):
+                work_item.cur_state = "Cleanup"
+                save_state(work_item)
 
-        if state.cur_state == "Cleanup":
-            cleanup_staging(state)
+        if work_item.state == "Cleanup":
+            cleanup_staging(work_item)
 
         # All stages completed exit
         return
@@ -266,4 +256,7 @@ if __name__ == '__main__':
             perform_heartbeat(my_work)
             # Making this work with single thread for now
             # spawn_new_worker(False)
-            process_work(my_work)
+            #process_work(my_work)
+            heart_beat_db = HeartBeatDb()
+            heart_beat_db.dump()
+

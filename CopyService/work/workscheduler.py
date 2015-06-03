@@ -1,7 +1,6 @@
 __author__ = 'alextc'
 import glob
 import logging
-import os
 import socket
 from model.phase2workitem import Phase2WorkItem
 from sql.heartbeatdb import HeartBeatDb
@@ -19,13 +18,13 @@ class WorkScheduler(object):
 
         potential_work_inputs = glob.glob(self._phase1_output_path)
         for potential_work_input in potential_work_inputs:
-            if self.try_to_take_ownership(potential_work_input):
-                phase2_work_item = Phase2WorkItem("Init", potential_work_input)
-                logging.debug("Found new work item {0}".format(phase2_work_item))
+            potential_phase2_work_item = Phase2WorkItem("Init", potential_work_input, socket.gethostname())
+            if self.try_to_take_ownership(potential_phase2_work_item):
+                logging.debug("Found new work item {0}".format(potential_work_input))
                 # now that the work is claimed let's write our first heartbeat for this work item
                 heart_beat_db = HeartBeatDb()
-                heart_beat_db.write_heart_beat(phase2_work_item.source_dir, socket.gethostname())
-                return phase2_work_item
+                heart_beat_db.write_heart_beat(potential_phase2_work_item)
+                return potential_phase2_work_item
 
         return False
 
@@ -56,32 +55,25 @@ class WorkScheduler(object):
             logging.debug("No new or stranded work: exiting")
             return False
 
-        # TODO: try applying filter first; what happens is the list if empty to start with
-        filter(lambda x: x.endswith("_in_process"), potential_work_inputs)
-        if not potential_work_inputs:
-            logging.debug("No new work: exiting")
-            return False
-
+        # TODO: Check for Stranded Work
         return True
-
 
     def is_heartbeat_stale(self, directory):
         logging.debug("Entered is_heartbeat_stale")
         heart_beat_db = HeartBeatDb()
         heart_beat = heart_beat_db.get_heart_beat(directory)
-        logging.debug("Got heartbeat {0}".format(heart_beat))
+        if heart_beat:
+            logging.debug("Got heartbeat {0}".format(heart_beat['directory']))
 
-    def try_to_take_ownership(self, potential_work_target):
-        if os.path.exists(potential_work_target):
-            logging.debug("Unable to locate source of work item - assuming somebody beat me to it."
-                          "Exiting. Returning False.")
-            return False
+        #TODO: check if heartbeat is stale
+        return  False
 
-        try:
-            os.rename(potential_work_target, potential_work_target + "_in_process")
-        except IOError as e:
-            logging.debug("Failed to rename {0} to _in_process. Assuming somebody beat me to it. Exiting "
-                          "Returning false".format(potential_work_target))
-            return False
+    def try_to_take_ownership(self, potential_phase2_work_item):
+        logging.debug("Entered try_to_take_ownership")
+        heart_beat_db = HeartBeatDb()
+        heart_beat_db.write_heart_beat(potential_phase2_work_item)
 
-        return True
+        confirmation = heart_beat_db.get_heart_beat(potential_phase2_work_item.source_dir)
+        logging.debug("Received confirmation of heart beat write. {0}, {1}, {2}",
+                      confirmation['directory'], confirmation['host'], confirmation['heartbeat'])
+        return confirmation['host'] == socket.gethostname()
