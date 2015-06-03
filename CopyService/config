@@ -1,8 +1,12 @@
 [Logging]
-Level:   CRITICIAL
+Level:  DEBUG
+#Level:  INFO
+#Level:  WARNING
+#Level:  ERROR
+#Level:  CRITICAL
 
 [Paths]
-# Container for config, scripts, working files
+# Application's container for config, scripts, working files
 Root:  /ifs/copy_svc
 log_dir:  %(Root)s/logdir
 
@@ -13,14 +17,15 @@ Persistence:  %(Root)s/persistence.file
 Process_persists:  %(Root)s/process_list_persist.dat
 
 Service: /ifs/zones/*/copy_svc
-Glob:    %(Service)s/to/*/*
-Work:    staging/*/*
+Glob:  %(Service)s/to/*/*
+Work_target:  %(Service)s/staging/*/*
 
 [Intervals]
 # How long to wait for no write seen
 Watcher:  600
 
 # Delay prior to restarting script
+# aka "sleep" time
 Restart:  1
 
 # Point at which heartbeat considered stale
@@ -33,3 +38,16 @@ Concurrent:  5
 # Max CPU to be considered viable to do work
 CPU:  50
 
+Formatter:  %Y, %m, %d, %H, %M, %S, %f
+
+# max_retry_count
+Retry:  5
+
+# max_stale_hb_time_in_seconds
+Stale_HB:  30
+
+[Check_running]
+Process:  /ifs/copy_svc/v3.py
+Path:  /ifs/copy_svc/cron_logs.txt
+Stale:  60
+Rotate:  14

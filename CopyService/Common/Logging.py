@@ -1,14 +1,32 @@
-def log_message(string):
-    print string
+import ConfigParser
+import logging
 
-def log_warning(string):
-    log_message(string)
+settings = ConfigParser.ConfigParser()
+settings.read('/ifs/copy_svc/config')
 
-def log_error(string):
-    log_message(string)
+LEVELS = {'DEBUG': 10, 
+          'INFO': 20,
+          'WARNING': 30,
+          'ERROR': 40,
+          'CRITICAL': 50}
 
-def log_exception(exception):
-    log_message(str(exception))
+log_level = LEVELS[settings.get('Logging', 'Level')]
+logging.basicConfig(level=log_level,)
 
 def log_debug(string):
-    log_message(string)
+    logging.debug(string)
+
+def log_info(string):
+    logging.info(string)
+
+def log_warning(string):
+    logging.warning(string)
+
+def log_error(string):
+    logging.error(string)
+
+def log_critical(string):
+    logging.critical(string)
+
+def log_exception(exception):
+    logging.exception(exception)
