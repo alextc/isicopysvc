@@ -18,14 +18,16 @@ class WorkScheduler(object):
 
         potential_work_inputs = glob.glob(self._phase1_output_path)
         for potential_work_input in potential_work_inputs:
-            potential_phase2_work_item = Phase2WorkItem("Init", potential_work_input, socket.gethostname())
+            potential_phase2_work_item = Phase2WorkItem(potential_work_input, "Init", socket.gethostname())
             if self.try_to_take_ownership(potential_phase2_work_item):
                 logging.debug("Found new work item {0}".format(potential_work_input))
                 # now that the work is claimed let's write our first heartbeat for this work item
                 heart_beat_db = HeartBeatDb()
                 heart_beat_db.write_heart_beat(potential_phase2_work_item)
+                logging.debug("Returning new phase2 work item{0}".format(potential_phase2_work_item))
                 return potential_phase2_work_item
 
+        logging.debug("Returning new False could not find or claim new work")
         return False
 
     def try_to_get_stranded_work(self):
@@ -56,6 +58,7 @@ class WorkScheduler(object):
             return False
 
         # TODO: Check for Stranded Work
+        logging.debug("is_there_any_work returning True")
         return True
 
     def is_heartbeat_stale(self, directory):
@@ -74,6 +77,5 @@ class WorkScheduler(object):
         heart_beat_db.write_heart_beat(potential_phase2_work_item)
 
         confirmation = heart_beat_db.get_heart_beat(potential_phase2_work_item.source_dir)
-        logging.debug("Received confirmation of heart beat write. {0}, {1}, {2}",
-                      confirmation['directory'], confirmation['host'], confirmation['heartbeat'])
-        return confirmation['host'] == socket.gethostname()
+        logging.debug("Received confirmation of heart beat write. {0}", confirmation.host)
+        return confirmation.host == socket.gethostname()

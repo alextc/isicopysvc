@@ -1,5 +1,5 @@
 __author__ = 'alextc'
-from CopyService.isiapi.papicommand import PapiCommand
+from isiapi.papicommand import PapiCommand
 import json
 
 class GetSmbSharesCommand(PapiCommand):

@@ -1,7 +1,7 @@
 __author__ = 'alextc'
 import sqlite3
 import os
-from CopyService.Common.datetimewrapper import DateTimeWrapper
+from Common.datetimewrapper import DateTimeWrapper
 
 class WriteLockDb:
 

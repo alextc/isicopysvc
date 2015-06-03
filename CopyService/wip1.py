@@ -54,16 +54,11 @@ def spawn_new_worker(should_wait):
 def perform_heartbeat(work_item):
     heart_beat_db = HeartBeatDb()
     heart_beat_db.write_heart_beat(work_item)
-    logging.debug("Heartbeat DB dump: {0}".format(heart_beat_db.dump()))
 
 def needs_copy(work_item):
     perform_heartbeat(work_item)
     if os.path.exists(work_item.get_target_dir()):
         return True
-
-def save_state(work_item):
-    #TODO: This used to write to disk; Replace with SQL ???
-    pass
 
 def async_copy(source_dir, target_dir):
     for src_dir, dirs, files in os.walk(source_dir):
@@ -215,32 +210,34 @@ def cleanup_staging(state):
     return my_ret
 
 def process_work(work_item):
+    logging.debug("Entered process_work")
+    logging.debug("Received work item to process:\n{0}".format(work_item))
     while True:
         if work_item.state == "Init":
             if needs_copy(work_item):
                 work_item.state = "CopyOrig"
-                save_state(work_item)
+                perform_heartbeat(work_item)
                 if copy_original_to_staging(work_item):
                     work_item.state = "ReAcl"
-                    save_state(work_item)
+                    perform_heartbeat(work_item)
             else:
                 work_item.state = "ReAcl"
-                save_state(work_item)
+                perform_heartbeat(work_item)
 
         if work_item.state == "CopyOrig":
             if copy_original_to_staging(work_item):
                 work_item.state = "ReAcl"
-                save_state(work_item)
+                perform_heartbeat(work_item)
 
         if work_item.state == "ReAcl":
             if reacl_staging(work_item):
                 work_item.state = "Move"
-                save_state(work_item)
+                perform_heartbeat(work_item)
 
         if work_item.state == "Move":
             if move_staging(work_item):
                 work_item.cur_state = "Cleanup"
-                save_state(work_item)
+                perform_heartbeat(work_item)
 
         if work_item.state == "Cleanup":
             cleanup_staging(work_item)
@@ -256,7 +253,8 @@ if __name__ == '__main__':
             perform_heartbeat(my_work)
             # Making this work with single thread for now
             # spawn_new_worker(False)
-            #process_work(my_work)
             heart_beat_db = HeartBeatDb()
+            print "Dumping hearbeat db"
             heart_beat_db.dump()
+            process_work(my_work)
 
