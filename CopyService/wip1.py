@@ -10,11 +10,9 @@ import shutil
 import Common.papi as PAPI
 from multiprocessing import Process
 import logging
-
-sys.path.append('/ifs/copy_svc/code/CopyService/aop')
-sys.path.append('/ifs/copy_svc/code/CopyService/locks')
-# from logstartandexit import LogEntryAndExit
-from locks.processpool import ProcessPool
+from work.processpool import ProcessPool
+from work.workscheduler import WorkScheduler
+from model.workstate import WorkState
 
 max_retry_count = 5
 max_concurrent = 5
@@ -23,136 +21,27 @@ max_stale_hb_time_in_seconds = 30
 potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*"
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 process_state = {"Init": "Init", "CopyOrig": "CopyOrig", "ReAcl": "ReAcl", "Move": "Move", "Cleanup": "Cleanup"}
-
-logging.basicConfig(filename='wip.log', level=logging.DEBUG)
-log = logging.getLogger("phase2_log")
-
-class state_obj:
-    def __init__(self, state, source_dir, process_dir):
-        self.state = state
-        self.source_dir = source_dir
-        self.target_dir = get_target_from_source(source_dir)
-        self.process_dir = process_dir
-
-    def __str__(self):
-        return "State:" + self.state + "\n" + \
-               "Source:" + self.source_dir + "\n" + \
-               "Target" + self.target_dir + "\n" + \
-               "ProcessDir:" + self.process_dir + "\n"
+logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG)
 
 def get_work_available():
     logging.debug("Entered get_work_available")
-    stranded_work = get_stranded_work()
+    work_scheduler = WorkScheduler()
+    stranded_work = work_scheduler.get_stranded_work()
     if stranded_work:
         return stranded_work()
 
     return get_new_work
 
 def get_new_work():
+    work_scheduler = WorkScheduler()
     potential_work_targets = glob.glob(potential_work_target_string)
     potential_work_targets.sort()
     if potential_work_targets:
         for each_potential_work_target in potential_work_targets:
             if not each_potential_work_target.endswith("_in_process"):
-                ownership_state = take_ownership(each_potential_work_target, False)
+                ownership_state = work_scheduler.take_ownership(each_potential_work_target, False)
                 if ownership_state:
                     return ownership_state
-
-def take_ownership(potential_work_target, ignore_prev_owner):
-    expected_target_staging_dir = potential_work_target + "_in_process"
-
-    if not ignore_prev_owner and os.path.exists(expected_target_staging_dir):
-        # Since path exists and the caller wants to respect prior ownership -> Exit
-        return
-    elif not os.path.exists(expected_target_staging_dir):
-        os.mkdir(expected_target_staging_dir)
-        write_ownership_markers(potential_work_target)
-    else:
-        write_ownership_markers(potential_work_target)
-
-    state = state_obj(state="Init", source_dir=potential_work_target, process_dir=expected_target_staging_dir)
-    return state
-
-def write_ownership_markers(potential_work_target):
-    expected_target_staging_dir = potential_work_target + "_in_process"
-    expected_hb_file = expected_target_staging_dir + "/hb.dat"
-    expected_source_file = expected_target_staging_dir + "/source.dat"
-    expected_owner_file = expected_target_staging_dir + "/owner_data.dat"
-
-    for i in range(max_retry_count):
-        try:
-            with open(expected_owner_file, 'w+') as owner_file:
-                fcntl.flock(expected_owner_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                owner_file.writelines(socket.gethostname() + ":" + str(os.getpid()))
-            with open(expected_hb_file, 'w+') as hb_file:
-                fcntl.flock(hb_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                hb_file.writelines(datetime.datetime.utcnow().strftime(datetime_format_string))
-            with open(expected_source_file, 'w+') as source_file:
-                fcntl.flock(source_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                source_file.writelines(potential_work_target)
-        except:
-            logging.debug(sys.exc_info()[0])
-            time.sleep(1)
-
-    if i == (max_retry_count - 1):
-        raise ValueError("Unable to write ownership markers")
-
-def get_target_from_source(source_dir):
-    my_ret = source_dir.replace("staging", "from")
-    return my_ret
-
-def get_stranded_work():
-    potential_strand_targets = glob.glob(potential_work_target_string)
-    potential_strand_targets.sort()
-    if potential_strand_targets:
-        for each_potential_strand_target in potential_strand_targets:
-            if each_potential_strand_target.endswith("_in_process"):
-                if is_heartbeat_stale(each_potential_strand_target):
-                    my_ret = take_ownership(get_original_source(each_potential_strand_target), True)
-                    if my_ret:
-                        my_ret.cur_state = get_state(each_potential_strand_target)
-                        return my_ret
-
-def get_original_source(ownership_path):
-    original_source = ownership_path + "/source.dat"
-    if os.path.exists(original_source):
-        with open(original_source) as orig_source:
-            my_ret = orig_source.readline().strip()
-            return my_ret
-
-    raise ValueError("Unable to get orignal source path")
-
-def is_heartbeat_stale(ownership_path):
-    hb_file = ownership_path + "/hb.dat"
-    if not os.path.exists(hb_file):
-        raise ValueError("Request to check heart beat on a non-existing hb.dat")
-
-    for i in range(max_retry_count):
-        try:
-            with open(hb_file) as last_heartbeat:
-                fcntl.flock(last_heartbeat.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                last_hb_time = last_heartbeat.readline().strip()
-                if last_hb_time:
-                    last_hb_datetime = datetime.datetime.strptime(last_hb_time, datetime_format_string)
-                    return (datetime.datetime.utcnow() - last_hb_datetime).seconds > max_stale_hb_time_in_seconds
-
-            time.sleep(1)
-        except:
-            logging.debug(sys.exc_info()[0])
-
-    if i == (max_retry_count - 1):
-        raise ValueError("Unable to check heartbeat")
-
-def get_state(ownership_path):
-    if not os.path.exists(ownership_path):
-        raise ValueError("Request to check state on a state.dat failed")
-
-    state_file_name = ownership_path + "/state.dat"
-    with open(state_file_name) as state_file:
-        my_ret = state_file.readline()
-        if not my_ret:
-            raise ValueError("No state found")
-        return my_ret
 
 def launch_script(script_path):
     os.system("python '" + script_path + "'")
@@ -386,5 +275,6 @@ if __name__ == '__main__':
         logging.debug(e)
         raise
     finally:
+        logging.debug("Entering Finally in Main")
         if process_pool.get_current_process_count() > 0:
             process_pool.decrement_process_count()

@@ -70,24 +70,35 @@ class ProcessPool(object):
         with open(self._process_records_file) as process_info:
             processes = process_info.readlines()
             if not processes:
+                logging.debug("No processes; returning 0")
                 return 0
             else:
+                logging.debug("Found {0} processes".format(len(processes)))
                 return len(processes)
 
     def decrement_process_count(self):
+        logging.debug("Entered decrement_process_count")
         assert os.path.exists(self._process_records_file), \
             "Attempt to open a non-existing process file in decrement_process_count"
+
         for i in range(self._max_retry_count):
             try:
-                with open(self._process_records_file, 'r+') as process_info:
+                with open(self._process_records_file, 'w+') as process_info:
                     fcntl.flock(process_info.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
                     lines = process_info.readlines()
                     assert len(lines) > 0, "Was asked to remove a process from an empty file"
+                    logging.debug("About to remove a process. Current process list:\n{0}".format("\n".join(lines)))
                     lines.pop()
-                    process_info.writelines(lines)
-                    logging.debug("Decremented process count, new value is {}".format(len(lines)))
-            except:
-                logging.debug(sys.exc_info()[0])
+
+                    process_info.truncate()
+                    if len(lines) > 0:
+                        process_info.writelines(lines)
+
+                    logging.debug("Decremented process count, new value is {0}".format(len(lines)))
+                    logging.debug("Current process list:\n{0}".format("\n".join(lines)))
+                return
+            except IOError as e:
+                logging.debug(e.message)
                 time.sleep(1)
 
         assert i < self._max_retry_count, "Unable to decrement process count in decrement_process_count"

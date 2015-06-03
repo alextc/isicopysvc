@@ -125,8 +125,8 @@ def process_persistence_file():
                 if debug:
                     print "We are working on matching the following:  %s" % openfile['file']
 
-                # Each openfile is a dictionary with five keys:  locks, user, id, file, permissions
-                # Example:  {u'locks': 0, u'user': u'root', u'id': 100, u'file': u'C:\\ifs', u'permissions': [u'read']}
+                # Each openfile is a dictionary with five keys:  work, user, id, file, permissions
+                # Example:  {u'work': 0, u'user': u'root', u'id': 100, u'file': u'C:\\ifs', u'permissions': [u'read']}
 
 
                 if 'write' in openfile['permissions']:

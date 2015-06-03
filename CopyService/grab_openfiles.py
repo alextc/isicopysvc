@@ -53,7 +53,7 @@ def papi_action(action, url_parts, query_dict={}, header_dict={}, body_data='', 
 ### What are we getting back from the PAPI call?  
   # The response to GET is a tuple.
   # example of a tuple returned
-''' (200, {'status': '200 Ok', 'content-type': 'application/json', 'allow': 'GET, HEAD'}, '\n{\n"openfiles" : \n[\n\n{\n"file" : "C:\\\\ifs",\n"id" : 100,\n"locks" : 0,\n"permissions" : [ "read" ],\n"user" : "root"\n},\n\n{\n"file" : "C:\\\\ifs",\n"id" : 488,\n"locks" : 0,\n"permissions" : [ "read" ],\n"user" : "root"\n}\n],\n"resume" : null,\n"total" : 2\n}\n') ''' 
+''' (200, {'status': '200 Ok', 'content-type': 'application/json', 'allow': 'GET, HEAD'}, '\n{\n"openfiles" : \n[\n\n{\n"file" : "C:\\\\ifs",\n"id" : 100,\n"work" : 0,\n"permissions" : [ "read" ],\n"user" : "root"\n},\n\n{\n"file" : "C:\\\\ifs",\n"id" : 488,\n"work" : 0,\n"permissions" : [ "read" ],\n"user" : "root"\n}\n],\n"resume" : null,\n"total" : 2\n}\n') '''
 
   # response[0] is an integer (int).  In this case 200.
   # response[1] is a dictionary.  In this case it is:   {'status': '200 Ok', 'content-type': 'application/json', 'allow': 'GET, HEAD'} 
@@ -66,7 +66,7 @@ def papi_action(action, url_parts, query_dict={}, header_dict={}, body_data='', 
     {
     "file" : "C:\\ifs",
     "id" : 100,
-    "locks" : 0,
+    "work" : 0,
     "permissions" : [ "read" ],
     "user" : "root"
     },
@@ -156,8 +156,8 @@ for openfile in openfiles_list:
     if debug:
         print "We are working on matching the following:  %s" % openfile['file']
 
-    # Each openfile is a dictionary with five keys:  locks, user, id, file, permissions
-    # Example:  {u'locks': 0, u'user': u'root', u'id': 100, u'file': u'C:\\ifs', u'permissions': [u'read']}
+    # Each openfile is a dictionary with five keys:  work, user, id, file, permissions
+    # Example:  {u'work': 0, u'user': u'root', u'id': 100, u'file': u'C:\\ifs', u'permissions': [u'read']}
     # We only care about open files with write permissions
 
 
