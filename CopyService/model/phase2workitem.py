@@ -1,9 +1,12 @@
 __author__ = 'alextc'
+import datetime
+
 class Phase2WorkItem(object):
-    def __init__(self, source_dir, state, host, heartbeat=None):
+    def __init__(self, source_dir, state, host, pid, heartbeat=None):
         self.state = state
         self.source_dir = source_dir
         self.host = host
+        self.pid = pid
         self.heartbeat = heartbeat
 
     def get_target_dir(self):
@@ -16,6 +19,6 @@ class Phase2WorkItem(object):
                 "Host:" + self.host
 
         if self.heartbeat:
-            result = result + "\n" + self.heartbeat
+            result = result + "\n" + self.heartbeat.strftime("%Y-%m-%d %H:%M:%S")
 
-        return  result
+        return result

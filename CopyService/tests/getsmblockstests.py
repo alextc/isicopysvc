@@ -1,6 +1,6 @@
 __author__ = 'alextc'
 import unittest
-from CopyService.isiapi.getsmblockscommand import GetSmbLocksCommand
+from isiapi.getsmblockscommand import GetSmbLocksCommand
 
 class GetSmbLocksTests(unittest.TestCase):
 

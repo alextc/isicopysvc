@@ -27,7 +27,9 @@ datetime_format_string = settings.get('Variables', 'Formatter')
 potential_work_target_string = "/ifs/zones/*/copy_svc/staging/*/*/"
 datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
 process_state = {"Init": "Init", "CopyOrig": "CopyOrig", "ReAcl": "ReAcl", "Move": "Move", "Cleanup": "Cleanup"}
-logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG)
+
+FORMAT = "[%(asctime)s %(process)s: %(funcName)s()] %(message)s"
+logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG, format=FORMAT)
 
 def get_work_available():
     logging.debug("Entered get_work_available")
@@ -173,11 +175,6 @@ def async_move(state):
     my_ret = True
     return my_ret
 
-def perform_fast_move(state):
-    my_ret = Process(target=async_move, args=(state,))
-    my_ret.start()
-    return my_ret
-
 def move_staging(work_item):
     move_process_obj = perform_fast_move(work_item)
     while (True):
@@ -192,69 +189,40 @@ def move_staging(work_item):
 def async_rmdir(directory):
     shutil.rmtree(directory)
 
-def perform_fast_rmdir(source_dir):
-    my_ret = Process(target=async_rmdir, args=(source_dir,))
-    my_ret.start()
-    return my_ret
-
-def cleanup_staging(state):
-    cleanup_process_obj = perform_fast_rmdir(state.process_dir)
-
-    # TODO: Does the process exist after completing the func call - this may run forever
-    while (True):
-        if process_finished(cleanup_process_obj):
-            break
-        time.sleep(1)
-
-    my_ret = check_process_result(cleanup_process_obj)
-    return my_ret
+def cleanup_staging(work_item):
+    logging.debug("ENTERING")
+    #logging.debug("About to delete {0}".format(work_item.source_dir))
+    try:
+        os.rmdir(work_item.source_dir)
+    except OSError as e:
+        logging.debug("Failed to delete a directory {0}. Assuming somebody beat me to it".format(work_item.source_dir))
 
 def process_work(work_item):
-    logging.debug("Entered process_work")
-    logging.debug("Received work item to process:\n{0}".format(work_item))
-    while True:
-        if work_item.state == "Init":
-            if needs_copy(work_item):
-                work_item.state = "CopyOrig"
-                perform_heartbeat(work_item)
-                if copy_original_to_staging(work_item):
-                    work_item.state = "ReAcl"
-                    perform_heartbeat(work_item)
-            else:
-                work_item.state = "ReAcl"
-                perform_heartbeat(work_item)
+    logging.debug("ENTERING")
+    # logging.debug("Received work item to process:\n{0}".format(work_item))
 
-        if work_item.state == "CopyOrig":
-            if copy_original_to_staging(work_item):
-                work_item.state = "ReAcl"
-                perform_heartbeat(work_item)
+    if work_item.state == "Init":
+        logging.debug("Setting state to Cleanup")
+        work_item.state = "Cleanup"
 
-        if work_item.state == "ReAcl":
-            if reacl_staging(work_item):
-                work_item.state = "Move"
-                perform_heartbeat(work_item)
-
-        if work_item.state == "Move":
-            if move_staging(work_item):
-                work_item.cur_state = "Cleanup"
-                perform_heartbeat(work_item)
-
-        if work_item.state == "Cleanup":
-            cleanup_staging(work_item)
-
-        # All stages completed exit
-        return
+    if work_item.state == "Cleanup":
+        cleanup_staging(work_item)
 
 if __name__ == '__main__':
-    process_pool = ProcessPool()
-    if not process_pool.is_max_process_count_reached():
-        my_work = get_work_available()
-        if my_work:
-            perform_heartbeat(my_work)
-            # Making this work with single thread for now
-            # spawn_new_worker(False)
-            heart_beat_db = HeartBeatDb()
-            print "Dumping hearbeat db"
-            heart_beat_db.dump()
-            process_work(my_work)
+    for i in range(5000):
+        process_pool = ProcessPool()
+        if not process_pool.is_max_process_count_reached():
+            my_work = get_work_available()
+            if my_work:
+                perform_heartbeat(my_work)
+                # Making this work with single thread for now
+                # spawn_new_worker(False)
+                heart_beat_db = HeartBeatDb()
+                process_work(my_work)
+    '''
+    print "Dumping hearbeat db"
+    heart_beats = heart_beat_db.dump()
+    for heart_beat in heart_beats:
+        print heart_beat
+    '''
 

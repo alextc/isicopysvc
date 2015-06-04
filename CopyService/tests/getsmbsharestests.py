@@ -1,6 +1,6 @@
 __author__ = 'alextc'
 import unittest
-from CopyService.isiapi.getsmbsharescommand import GetSmbSharesCommand
+from isiapi.getsmbsharescommand import GetSmbSharesCommand
 
 class GetSmbSharesTests(unittest.TestCase):
 

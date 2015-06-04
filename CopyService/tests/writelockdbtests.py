@@ -1,7 +1,7 @@
 import unittest
 import os
-from CopyService.sql.writelockdb import WriteLockDb
-from CopyService.Common.datetimewrapper import DateTimeWrapper
+from sql.writelockdb import WriteLockDb
+from Common.datetimewrapper import DateTimeWrapper
 
 class WriteLockDbTests(unittest.TestCase):
     _db_path = "/ifs/copy_svc/files.db"

@@ -2,6 +2,7 @@ __author__ = 'alextc'
 import sqlite3
 from datetime import datetime
 from model.phase2workitem import Phase2WorkItem
+import logging
 
 class HeartBeatDb:
     def __init__(self):
@@ -14,15 +15,23 @@ class HeartBeatDb:
                 cursor.execute("CREATE TABLE heartbeats "
                                "(directory TEXT NOT NULL PRIMARY KEY, "
                                "host TEXT NOT NULL, "
+                               "pid TEXT NOT NULL, "
                                "heartbeat timestamp NOT NULL,"
                                " state TEXT NOT NULL)")
 
     def write_heart_beat(self, work_item):
-        with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
-            cursor = connection.cursor()
-            now = datetime.now()
-            cursor.execute('INSERT OR REPLACE into heartbeats (directory, host, heartbeat, state) VALUES (?,?,?,?)',
-                           (work_item.source_dir, work_item.host, now, work_item.state))
+        logging.debug("Entered write_heart_beat")
+        #logging.debug("Recieved work_item to write:\n{0}".format(work_item))
+        try:
+
+            with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
+                cursor = connection.cursor()
+                now = datetime.now()
+                cursor.execute\
+                    ('INSERT OR REPLACE into heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
+                    (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
+        except sqlite3.Error as e:
+            logging.debug(e.message)
 
     def get_heart_beat(self, directory):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
@@ -31,7 +40,7 @@ class HeartBeatDb:
             result = cursor.fetchone()
 
         if result:
-            return Phase2WorkItem(result[0], result[3], result[1], result[2])
+            return Phase2WorkItem(result[0], result[4], result[1], result[2], result[3])
 
     def dump(self):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
@@ -39,8 +48,11 @@ class HeartBeatDb:
             cursor.execute('SELECT * FROM heartbeats')
             results =  cursor.fetchall()
 
+        heart_beats = []
         for result in results:
-            print("{0}\n{1}\n{2}".format(result[0], result[1], result[2]))
+            heart_beats.append(Phase2WorkItem(result[0], result[4], result[1], result[2], result[3]))
+
+        return heart_beats
 
     def clear_heart_beat_table(self):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:

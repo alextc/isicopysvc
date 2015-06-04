@@ -14,7 +14,7 @@ class ProcessPool(object):
         self._max_concurrent = 5
 
     def is_max_process_count_reached(self):
-        logging.debug("Entered is_max_process_count_reached")
+        logging.debug("ENTERING")
         assert os.path.exists(os.path.dirname(self._process_pool_entrance_lock)), "Process file directory not found"
 
         ps = ProcessList()
@@ -27,10 +27,10 @@ class ProcessPool(object):
                     num_of_running_instances = ps.get_number_of_running_instances()
                     assert num_of_running_instances > 0, "num_of_running_insances can't be 0"
 
-                    logging.debug("ps returned {0}".format(num_of_running_instances))
+                    # logging.debug("ps returned {0}".format(num_of_running_instances))
                     # -1 is for not counting the running script, since it has not become a working process yet
                     is_max_reached = (num_of_running_instances -1) >= self._max_concurrent
-                    logging.debug("is_max_process_count_reached returning {0}".format(is_max_reached))
+                    # logging.debug("is_max_process_count_reached returning {0}".format(is_max_reached))
                     return is_max_reached
 
             except IOError:

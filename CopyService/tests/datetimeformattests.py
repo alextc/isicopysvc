@@ -2,7 +2,7 @@ __author__ = 'alextc'
 
 import unittest
 import datetime
-from CopyService.Common.datetimewrapper import DateTimeWrapper
+from Common.datetimewrapper import DateTimeWrapper
 
 class WriteLockDbTests(unittest.TestCase):
     _datetime_format_string = '%Y, %m, %d, %H, %M, %S, %f'
