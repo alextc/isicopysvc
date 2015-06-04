@@ -17,8 +17,8 @@ class WorkScheduler(object):
         # logging.debug("potential_work_inputs:\n{0}".format("\n".join(potential_work_inputs)))
 
         if not potential_work_inputs:
-           logging.debug("try_get_new_phase2_work_item has nothing todo, exiting")
-           return False
+            logging.debug("try_get_new_phase2_work_item has nothing todo, exiting")
+            return False
 
         # logging.debug("Located folders in the staging area:\n{0}".format("\n".join(potential_work_inputs)))
         for potential_work_input in potential_work_inputs:

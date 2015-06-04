@@ -16,4 +16,5 @@ class LogEntryAndExit(object):
             self.logger.debug(self.ENTRY_MESSAGE.format(func.__name__))
             f_result = func(*args, **kwds)
             self.logger.debug(self.EXIT_MESSAGE.format(func.__name__))
+            return f_result
         return wrapper

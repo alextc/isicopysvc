@@ -5,7 +5,7 @@ import logging
 
 class GetAclCommand(NamespaceCommand):
     def __init__(self, path):
-        NamespaceCommand.__init__(self, "GET", ['namespace'] + path.split("/"), {'acl': ''})
+        NamespaceCommand.__init__(self, http_verb="GET", directory=path, qry_dict={'acl': ''})
         self._path = path
 
     def execute(self):
