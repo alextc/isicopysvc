@@ -62,7 +62,7 @@ class WorkScheduler(object):
             return
 
         # TODO: Check for Stranded Work
-        logging.debug("is_there_any_work returning work")
+        logging.debug("yes there is potential work")
         return potential_work_inputs
 
     def is_heartbeat_stale(self, directory):
@@ -73,7 +73,8 @@ class WorkScheduler(object):
 
     def try_to_take_ownership(self, potential_phase2_work_item):
         heart_beat_db = HeartBeatDb()
-        heart_beat_db.write_heart_beat(potential_phase2_work_item)
-        confirmation = heart_beat_db.get_heart_beat(potential_phase2_work_item.source_dir)
-        logging.debug("Received confirmation of heart beat write. {0}".format(confirmation.host))
-        return confirmation.host == socket.gethostname()
+        is_attempt_success =  heart_beat_db.try_to_take_ownership(potential_phase2_work_item)
+        # TODO: Add logic to detect stale hearbeat and force membership change
+
+        logging.debug("Take ownership command completed: {0}".format(is_attempt_success))
+        return is_attempt_success

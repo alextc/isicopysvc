@@ -19,8 +19,25 @@ class HeartBeatDb:
                                "heartbeat timestamp NOT NULL,"
                                " state TEXT NOT NULL)")
 
+
+    def try_to_take_ownership(self, work_item):
+        logging.debug("ENTERING")
+        #logging.debug("Recieved work_item to take ownership:\n{0}".format(work_item))
+        try:
+            with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
+                cursor = connection.cursor()
+                now = datetime.now()
+                cursor.execute\
+                    ('INSERT into heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
+                    (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
+        except sqlite3.IntegrityError as e:
+            logging.debug(e)
+            return False
+
+        return True
+
     def write_heart_beat(self, work_item):
-        logging.debug("Entered write_heart_beat")
+        logging.debug("ENTERING")
         #logging.debug("Recieved work_item to write:\n{0}".format(work_item))
         try:
 
@@ -32,6 +49,7 @@ class HeartBeatDb:
                     (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
         except sqlite3.Error as e:
             logging.debug(e.message)
+            raise
 
     def get_heart_beat(self, directory):
         with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:

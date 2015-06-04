@@ -192,10 +192,7 @@ def async_rmdir(directory):
 def cleanup_staging(work_item):
     logging.debug("ENTERING")
     #logging.debug("About to delete {0}".format(work_item.source_dir))
-    try:
-        os.rmdir(work_item.source_dir)
-    except OSError as e:
-        logging.debug("Failed to delete a directory {0}. Assuming somebody beat me to it".format(work_item.source_dir))
+    os.rmdir(work_item.source_dir)
 
 def process_work(work_item):
     logging.debug("ENTERING")
