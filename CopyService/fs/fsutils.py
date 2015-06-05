@@ -12,7 +12,7 @@ class FsUtils(object):
         pass
 
     @staticmethod
-    def get_source_directories(self, root_path):
+    def get_source_directories(root_path):
         logging.debug("\n\tENTERING get_source_directories")
         logging.debug("\n\tPARAMETER root_path\n\t\t%s", root_path)
         result = glob.glob(root_path)

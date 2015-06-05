@@ -10,6 +10,7 @@ class GetAclCommand(NamespaceCommand):
 
     @LogEntryAndExit(logging.getLogger())
     def execute(self):
+        logging.debug("about to execute GetAclCommand for {0}".format(self._path))
         raw_response = super(GetAclCommand, self).execute()
         if raw_response[2]:
             logging.debug("Returning {0}".format(raw_response[2]))

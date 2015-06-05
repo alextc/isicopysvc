@@ -15,13 +15,13 @@ class SetAclCommand(NamespaceCommand):
 
     @LogEntryAndExit(logging.getLogger())
     def execute(self):
-        retry_count = 0
-
-        while True:
+        for i in range(SetAclCommand._retry_max_count):
             SetAclCommand._function_call_count += 1
             try:
                 raw_response = super(SetAclCommand, self).execute()
-                assert raw_response[0] == 200, "Set ACL API failed"
+                assert raw_response[0] == 200, "Set ACL API for dir {0} failed, response was {1}".format(
+                    self._path,
+                    raw_response[0])
                 logging.debug("Set ACL API for dir {0} completed with the status of {1}".format(
                     self._path,
                     raw_response[0]))
@@ -29,9 +29,7 @@ class SetAclCommand(NamespaceCommand):
             except RuntimeError as e:
                 logging.debug("{0}, while processing {1}".format(e, self._path))
                 logging.debug("The function was called {0} times".format(SetAclCommand._function_call_count))
-                retry_count += 1
-                if retry_count > SetAclCommand._retry_max_count:
-                    logging.debug("Maximum retry count reached; failing")
-                    raise
-                else:
-                    time.sleep(SetAclCommand._retry_back_off_in_sec)
+                time.sleep(SetAclCommand._retry_back_off_in_sec)
+
+        logging.debug("Maximum retry count reached; failing")
+        raise RuntimeError("Unable to complete SetACLCommand")

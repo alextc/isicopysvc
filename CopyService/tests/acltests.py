@@ -41,11 +41,11 @@ class AclTests(unittest.TestCase):
 
         root_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
         template_path = "/ifs/zones/ad2/from"
-        for i in range(50):
+        for i in range(500):
             dir_name = random.randint(10000, 900000)
             dir_path = os.path.join(root_path, str(dir_name))
             os.mkdir(dir_path)
-            for j in range(10):
+            for j in range(100):
                 file_name = os.path.join(dir_path, str(random.randint(10000, 900000)))
                 f = open(file_name,'w+')
                 f.close()

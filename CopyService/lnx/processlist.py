@@ -4,7 +4,7 @@ import logging
 
 class ProcessList(object):
     def __init__(self):
-        self._main_file_name = "wip1.py"
+        self._main_file_name = "phase2.py"
 
     def get_number_of_running_instances(self):
         number_of_instances = 0
