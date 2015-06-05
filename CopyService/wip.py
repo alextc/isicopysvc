@@ -17,7 +17,7 @@ import datetime
 import json
 import glob
 import shutil
-import Common.Logging as Logger
+import Common.log as Logger
 import Common.papi as PAPI
 from multiprocessing import Process
 import logging

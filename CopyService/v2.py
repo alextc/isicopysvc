@@ -11,7 +11,7 @@ import unicodedata
 import shutil
 import datetime
 import time
-import Common.Logging as Logger
+import Common.log as Logger
 import Common.papi as PAPI
 
 

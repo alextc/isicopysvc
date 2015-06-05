@@ -4,12 +4,14 @@ import os
 import logging
 from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
+from aop.logstartandexit import LogEntryAndExit
 
 class FsUtils(object):
 
     def __init__(self):
         pass
 
+    @staticmethod
     def get_source_directories(self, root_path):
         logging.debug("\n\tENTERING get_source_directories")
         logging.debug("\n\tPARAMETER root_path\n\t\t%s", root_path)
@@ -17,8 +19,9 @@ class FsUtils(object):
         logging.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result))
         return result
 
-    def async_reacl(self, template_dir, target_dir):
-        logging.debug("Entering async_reacl")
+    @staticmethod
+    @LogEntryAndExit(logging.getLogger())
+    def reacl_tree(target_dir, template_dir):
         logging.debug("Template:{0}".format(template_dir))
         logging.debug("Target:{0}".format(target_dir))
 
