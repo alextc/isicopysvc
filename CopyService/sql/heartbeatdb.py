@@ -7,7 +7,9 @@ import logging
 class HeartBeatDb:
     def __init__(self):
         self._data_file_path = "/ifs/copy_svc/heartbeat.db"
-        with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
+        with sqlite3.connect(
+                self._data_file_path,
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='heartbeats'")
             result = cursor.fetchone();
@@ -19,17 +21,33 @@ class HeartBeatDb:
                                "heartbeat timestamp NOT NULL,"
                                " state TEXT NOT NULL)")
 
-
     def try_to_take_ownership(self, work_item):
         logging.debug("ENTERING")
-        #logging.debug("Recieved work_item to take ownership:\n{0}".format(work_item))
+        # logging.debug("Recieved work_item to take ownership:\n{0}".format(work_item))
         try:
-            with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
+            with sqlite3.connect(
+                    self._data_file_path,
+                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
                 now = datetime.now()
-                cursor.execute\
-                    ('INSERT into heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                    (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
+                cursor.execute \
+                    ('INSERT INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
+                     (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
+        except sqlite3.IntegrityError as e:
+            logging.debug(e)
+            return False
+
+        return True
+
+    def remove_work_item(self, work_item):
+        logging.debug("ENTERING remove_work_item")
+        # logging.debug("Recieved work_item to remove:\n{0}".format(work_item))
+        try:
+            with sqlite3.connect(
+                    self._data_file_path,
+                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
+                cursor = connection.cursor()
+                cursor.execute('DELETE FROM heartbeats WHERE directory = (?)', work_item.source_dir)
         except sqlite3.IntegrityError as e:
             logging.debug(e)
             return False
@@ -38,21 +56,25 @@ class HeartBeatDb:
 
     def write_heart_beat(self, work_item):
         logging.debug("ENTERING")
-        #logging.debug("Recieved work_item to write:\n{0}".format(work_item))
+        # logging.debug("Recieved work_item to write:\n{0}".format(work_item))
         try:
 
-            with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
+            with sqlite3.connect(
+                    self._data_file_path,
+                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
                 now = datetime.now()
-                cursor.execute\
-                    ('INSERT OR REPLACE into heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                    (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
+                cursor.execute \
+                    ('INSERT OR REPLACE INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
+                     (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
         except sqlite3.Error as e:
             logging.debug(e.message)
             raise
 
     def get_heart_beat(self, directory):
-        with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
+        with sqlite3.connect(
+                self._data_file_path,
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             cursor.execute('SELECT * FROM heartbeats WHERE directory = (?)', (directory,))
             result = cursor.fetchone()
@@ -61,10 +83,12 @@ class HeartBeatDb:
             return Phase2WorkItem(result[0], result[4], result[1], result[2], result[3])
 
     def dump(self):
-        with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
+        with sqlite3.connect(
+                self._data_file_path,
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             cursor.execute('SELECT * FROM heartbeats')
-            results =  cursor.fetchall()
+            results = cursor.fetchall()
 
         heart_beats = []
         for result in results:
@@ -73,9 +97,9 @@ class HeartBeatDb:
         return heart_beats
 
     def clear_heart_beat_table(self):
-        with sqlite3.connect(self._data_file_path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES) as connection:
-            cursor =  connection.cursor()
+        with sqlite3.connect(
+                self._data_file_path,
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
+            cursor = connection.cursor()
             sql_delete_query = "DELETE from heartbeats"
             cursor.execute(sql_delete_query)
-
-

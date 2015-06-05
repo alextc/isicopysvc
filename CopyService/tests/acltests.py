@@ -54,6 +54,9 @@ class AclTests(unittest.TestCase):
         get_template_acl_command.execute()
         FsUtils.reacl_tree(root_path, template_path)
 
+        print "SetAclCommand Executed {0} times".format(SetAclCommand._function_call_count)
+        logging.debug("SetAclCommand Executed {0} times".format(SetAclCommand._function_call_count))
+
 if __name__ == '__main__':
     unittest.main()
 
