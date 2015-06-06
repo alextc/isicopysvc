@@ -27,6 +27,8 @@ class FsUtils(object):
 
         get_acl_from_template_command = GetAclCommand(template_dir)
         acl_to_apply = get_acl_from_template_command.execute()
+
+        # I don't think I need to set ACL here /ifs/zones/ad1/copy_svc/staging/ad2 ???
         set_acl_on_root_command = SetAclCommand(target_dir, acl_to_apply)
         set_acl_on_root_command.execute()
 

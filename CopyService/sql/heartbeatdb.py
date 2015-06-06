@@ -32,7 +32,7 @@ class HeartBeatDb:
                 now = datetime.now()
                 cursor.execute \
                     ('INSERT INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                     (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
+                     (work_item.phase2_source_dir, work_item.host, work_item.pid, now, work_item.state))
         except sqlite3.IntegrityError as e:
             logging.debug(e)
             return False
@@ -47,7 +47,7 @@ class HeartBeatDb:
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                cursor.execute('DELETE FROM heartbeats WHERE directory = (?)', work_item.source_dir)
+                cursor.execute('DELETE FROM heartbeats WHERE directory = (?)', (work_item.phase2_source_dir,))
         except sqlite3.IntegrityError as e:
             logging.debug(e)
             return False
@@ -66,7 +66,7 @@ class HeartBeatDb:
                 now = datetime.now()
                 cursor.execute \
                     ('INSERT OR REPLACE INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                     (work_item.source_dir, work_item.host, work_item.pid, now, work_item.state))
+                     (work_item.phase2_source_dir, work_item.host, work_item.pid, now, work_item.state))
         except sqlite3.Error as e:
             logging.debug(e.message)
             raise

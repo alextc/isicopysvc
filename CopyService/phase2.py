@@ -1,4 +1,3 @@
-import os
 import shutil
 import logging
 from work.processpool import ProcessPool
@@ -9,32 +8,30 @@ from fs.fsutils import FsUtils
 FORMAT = "[%(asctime)s %(process)s %(message)s"
 logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG, format=FORMAT)
 
-def async_move(state):
-    if os.path.exists(state.target_dir):
-        shutil.move(state.target_dir, state.process_dir + "/old_source_dir")
-
-    shutil.move(state.source_dir, state.target_dir)
-    my_ret = True
-    return my_ret
-
 def start_workflow(work_item):
     logging.debug("ENTERING")
     # logging.debug("Received work item to process:\n{0}".format(work_item))
 
     if work_item.state == "ReAcl":
+        logging.debug("Setting state to Move")
+        FsUtils.reacl_tree(work_item.phase2_source_dir, work_item.acl_template_dir)
+        work_item.state = "Move"
+
+    if work_item.state == "Move":
+        shutil.move(work_item.phase2_source_dir, work_item.target_dir)
         logging.debug("Setting state to Cleanup")
-        FsUtils.reacl_tree(work_item.source_dir, work_item.acl_template_dir)
         work_item.state = "Cleanup"
 
     if work_item.state == "Cleanup":
-        shutil.rmtree(work_item.source_dir)
+        # TODO: remove this comment below once phase1 is in place
+        # shutil.rmtree(work_item.phase1_source_dir)
         HeartBeatDb().remove_work_item(work_item)
         return
 
     raise ValueError("Unexpected state of a work_item {0}", work_item)
 
 if __name__ == '__main__':
-    for i in range(5000):
+    for i in range(500):
         process_pool = ProcessPool()
         if not process_pool.is_max_process_count_reached():
             my_work_item = WorkScheduler().try_get_new_phase2_work_item()
