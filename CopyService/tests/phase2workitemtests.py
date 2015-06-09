@@ -2,7 +2,7 @@ __author__ = 'alextc'
 import unittest
 import random
 import os
-import socket
+
 from model.phase2workitem import Phase2WorkItem
 
 class Phase2ItemTests(unittest.TestCase):
@@ -14,11 +14,7 @@ class Phase2ItemTests(unittest.TestCase):
         phase2_source_dir_path = os.path.join(Phase2ItemTests._root_path, str(phase2_source_dir_name))
         os.mkdir(phase2_source_dir_path)
 
-        sut = Phase2WorkItem(
-            state="Init",
-            phase2_source_dir=phase2_source_dir_path,
-            host=socket.gethostname(),
-            pid=os.getpid())
+        sut = Phase2WorkItem(phase2_source_dir=phase2_source_dir_path, state="Init")
         print sut
 
 if __name__ == '__main__':

@@ -80,7 +80,7 @@ class HeartBeatDb:
             result = cursor.fetchone()
 
         if result:
-            return Phase2WorkItem(result[0], result[4], result[1], result[2], result[3])
+            return Phase2WorkItem(result[0], result[4], result[3])
 
     def dump(self):
         with sqlite3.connect(
@@ -92,7 +92,7 @@ class HeartBeatDb:
 
         heart_beats = []
         for result in results:
-            heart_beats.append(Phase2WorkItem(result[0], result[4], result[1], result[2], result[3]))
+            heart_beats.append(Phase2WorkItem(result[0], result[4], result[3]))
 
         return heart_beats
 

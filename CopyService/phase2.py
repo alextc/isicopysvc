@@ -13,11 +13,12 @@ def start_workflow(work_item):
     # logging.debug("Received work item to process:\n{0}".format(work_item))
 
     if work_item.state == "ReAcl":
-        logging.debug("Setting state to Move")
         FsUtils.reacl_tree(work_item.phase2_source_dir, work_item.acl_template_dir)
+        logging.debug("Setting state to Move")
         work_item.state = "Move"
 
     if work_item.state == "Move":
+        logging.debug("About to move {0} to {1}".format(work_item.phase2_source_dir, work_item.target_dir))
         shutil.move(work_item.phase2_source_dir, work_item.target_dir)
         logging.debug("Setting state to Cleanup")
         work_item.state = "Cleanup"

@@ -23,7 +23,7 @@ class WorkScheduler(object):
         # logging.debug("Located folders in the staging area:\n{0}".format("\n".join(potential_work_inputs)))
         for potential_work_input in potential_work_inputs:
             logging.debug("About to claim directory {0}".format(potential_work_input))
-            potential_phase2_work_item = Phase2WorkItem(potential_work_input, "Init", socket.gethostname(), os.getpid())
+            potential_phase2_work_item = Phase2WorkItem(potential_work_input, "Init")
             if self.try_to_take_ownership(potential_phase2_work_item):
                 logging.debug("Found and claimed new work_item {0}".format(potential_work_input))
                 # now that the work is claimed let's write our first heartbeat for this work item
