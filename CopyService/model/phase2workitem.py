@@ -1,12 +1,13 @@
 __author__ = 'alextc'
 import os
 import socket
+import datetime
 from model.phase2pathcalculator import Phase2PathCalculator
 
 class Phase2WorkItem(object):
     _states = ["Init", "CopyOrig", "ReAcl", "Move", "Cleanup"]
 
-    def __init__(self, phase2_source_dir, state, heartbeat=None):
+    def __init__(self, phase2_source_dir, state="Init", heartbeat=None):
 
         assert os.path.exists(phase2_source_dir), \
             "Unable to locate phase2_source_dir {0}".format(phase2_source_dir)
@@ -19,7 +20,10 @@ class Phase2WorkItem(object):
         self.state = state
         self.host = socket.gethostname()
         self.pid = os.getpid()
-        self.heartbeat = heartbeat
+        if not heartbeat:
+            self.heartbeat = datetime.datetime.now()
+        else:
+            self.heartbeat = heartbeat
 
     def __str__(self):
         result = "State:" + self.state + "\n" + \

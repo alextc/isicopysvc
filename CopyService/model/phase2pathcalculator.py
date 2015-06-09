@@ -50,8 +50,8 @@ class Phase2PathCalculator(object):
             self._dir_name
 
         # Uncomment this once testing on phase2 is complete
-        #assert os.path.exists(phase1_source_dir), \
-        #    "Unable to locate phase1_source_dir {0}".format(phase1_source_dir)
+        assert not os.path.exists(phase1_source_dir), \
+            "We are in phase2 but phase1_source_dir {0} still exist".format(phase1_source_dir)
 
         return phase1_source_dir
 

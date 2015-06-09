@@ -18,21 +18,24 @@ class HeartBeatDb:
                                "(directory TEXT NOT NULL PRIMARY KEY, "
                                "host TEXT NOT NULL, "
                                "pid TEXT NOT NULL, "
-                               "heartbeat timestamp NOT NULL,"
-                               " state TEXT NOT NULL)")
+                               "heartbeat timestamp NOT NULL, "
+                               "state TEXT NOT NULL)")
 
     def try_to_take_ownership(self, work_item):
+        """
+        :type work_item: Phase2WorkItem
+        :return:
+        """
         logging.debug("ENTERING")
-        # logging.debug("Recieved work_item to take ownership:\n{0}".format(work_item))
+        # logging.debug("Received work_item to take ownership:\n{0}".format(work_item))
         try:
             with sqlite3.connect(
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                now = datetime.now()
                 cursor.execute \
                     ('INSERT INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                     (work_item.phase2_source_dir, work_item.host, work_item.pid, now, work_item.state))
+                     (work_item.phase2_source_dir, work_item.host, work_item.pid, work_item.heartbeat, work_item.state))
         except sqlite3.IntegrityError as e:
             logging.debug(e)
             return False
@@ -40,6 +43,10 @@ class HeartBeatDb:
         return True
 
     def remove_work_item(self, work_item):
+        """
+        :type work_item: Phase2WorkItem
+        :return:
+        """
         logging.debug("ENTERING remove_work_item")
         # logging.debug("Recieved work_item to remove:\n{0}".format(work_item))
         try:
@@ -50,13 +57,16 @@ class HeartBeatDb:
                 cursor.execute('DELETE FROM heartbeats WHERE directory = (?)', (work_item.phase2_source_dir,))
         except sqlite3.IntegrityError as e:
             logging.debug(e)
-            return False
+            raise
 
-        return True
 
     def write_heart_beat(self, work_item):
+        """
+        :type work_item: Phase2WorkItem
+        :return:
+        """
         logging.debug("ENTERING")
-        # logging.debug("Recieved work_item to write:\n{0}".format(work_item))
+        # logging.debug("Received work_item to write:\n{0}".format(work_item))
         try:
 
             with sqlite3.connect(
@@ -72,15 +82,20 @@ class HeartBeatDb:
             raise
 
     def get_heart_beat(self, directory):
+        """
+        :type directory: str
+        :rtype: Phase2WorkItem
+        """
         with sqlite3.connect(
                 self._data_file_path,
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             cursor.execute('SELECT * FROM heartbeats WHERE directory = (?)', (directory,))
             result = cursor.fetchone()
 
         if result:
-            return Phase2WorkItem(result[0], result[4], result[3])
+            return Phase2WorkItem(phase2_source_dir=result["directory"], state=result["state"])
 
     def dump(self):
         with sqlite3.connect(
@@ -92,7 +107,8 @@ class HeartBeatDb:
 
         heart_beats = []
         for result in results:
-            heart_beats.append(Phase2WorkItem(result[0], result[4], result[3]))
+            heart_beats.append(
+                Phase2WorkItem(phase2_source_dir=result["directory"], state=result["state"]))
 
         return heart_beats
 
