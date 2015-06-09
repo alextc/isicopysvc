@@ -3,9 +3,17 @@ import unittest
 import os
 import random
 import logging
+import signal
 from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
 from fs.fsutils import FsUtils
+
+
+def receive_signal(signum, stack):
+    print 'Received:', signum
+
+signal.signal(signal.SIGTERM, receive_signal)
+
 
 class AclTests(unittest.TestCase):
 
@@ -40,11 +48,13 @@ class AclTests(unittest.TestCase):
         logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG, format=log_message_format)
 
         root_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
-        template_path = "/ifs/zones/ad2/from"
+        template_path = "/ifs/zones/ad1"
+        # we're making 5 paths under root_path
         for i in range(5):
             dir_name = random.randint(10000, 900000)
             dir_path = os.path.join(root_path, str(dir_name))
             os.mkdir(dir_path)
+            # making 10 files under each new directories created
             for j in range(10):
                 file_name = os.path.join(dir_path, str(random.randint(10000, 900000)))
                 f = open(file_name,'w+')
