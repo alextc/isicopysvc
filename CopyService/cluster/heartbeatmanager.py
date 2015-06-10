@@ -7,7 +7,7 @@ from aop.logstartandexit import LogEntryAndExit
 
 
 class HeartBeatManager(object):
-    _heart_beat_max_threshold_in_sec = 10
+    _heart_beat_max_threshold_in_sec = 5
 
     def __init__(self, heart_beat_db, phase2_work_item):
         """
@@ -22,7 +22,7 @@ class HeartBeatManager(object):
     def write_heart_beat(self):
         assert self._get_total_seconds_for_timedelta(datetime.datetime.now() - self._phase2_work_item.heartbeat) < \
                HeartBeatManager._heart_beat_max_threshold_in_sec, \
-            "Attempt to write a heartbeat after expiration threshold"
+               "Attempt to write a heartbeat after expiration threshold"
 
         if self._should_write_heart_beat():
             self._phase2_work_item.heartbeat = datetime.datetime.now()

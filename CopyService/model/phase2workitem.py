@@ -4,6 +4,7 @@ import socket
 import datetime
 from model.phase2pathcalculator import Phase2PathCalculator
 
+
 class Phase2WorkItem(object):
     _states = ["Init", "CopyOrig", "ReAcl", "Move", "Cleanup"]
 
@@ -24,6 +25,12 @@ class Phase2WorkItem(object):
             self.heartbeat = datetime.datetime.now()
         else:
             self.heartbeat = heartbeat
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.phase2_source_dir == other.phase2_source_dir and \
+                   self.state == other.state and \
+                   self.heartbeat == other.heartbeat
 
     def __str__(self):
         result = "State:" + self.state + "\n" + \
