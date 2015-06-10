@@ -1,6 +1,5 @@
 __author__ = 'alextc'
 import sqlite3
-from datetime import datetime
 from model.phase2workitem import Phase2WorkItem
 import logging
 
@@ -42,6 +41,27 @@ class HeartBeatDb:
 
         return True
 
+    def force_ownership_take_over(self, work_item):
+        """
+        :type work_item: Phase2WorkItem
+        :return:
+        """
+        logging.debug("ENTERING")
+        # logging.debug("Received work_item to forcefully take ownership:\n{0}".format(work_item))
+        try:
+            with sqlite3.connect(
+                    self._data_file_path,
+                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
+                cursor = connection.cursor()
+                cursor.execute \
+                    ('INSERT OR REPLACE INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
+                     (work_item.phase2_source_dir, work_item.host, work_item.pid, work_item.heartbeat, work_item.state))
+        except sqlite3.IntegrityError as e:
+            logging.debug(e)
+            return False
+
+        return True
+
     def remove_work_item(self, work_item):
         """
         :type work_item: Phase2WorkItem
@@ -59,24 +79,22 @@ class HeartBeatDb:
             logging.debug(e)
             raise
 
-
     def write_heart_beat(self, work_item):
         """
         :type work_item: Phase2WorkItem
         :return:
         """
         logging.debug("ENTERING")
-        # logging.debug("Received work_item to write:\n{0}".format(work_item))
+        logging.debug("Received work_item to write:\n{0}".format(work_item))
         try:
 
             with sqlite3.connect(
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                now = datetime.now()
                 cursor.execute \
                     ('INSERT OR REPLACE INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                     (work_item.phase2_source_dir, work_item.host, work_item.pid, now, work_item.state))
+                     (work_item.phase2_source_dir, work_item.host, work_item.pid, work_item.heartbeat, work_item.state))
         except sqlite3.Error as e:
             logging.debug(e.message)
             raise
@@ -94,8 +112,17 @@ class HeartBeatDb:
             cursor.execute('SELECT * FROM heartbeats WHERE directory = (?)', (directory,))
             result = cursor.fetchone()
 
-        if result:
-            return Phase2WorkItem(phase2_source_dir=result["directory"], state=result["state"])
+        assert result, "get_heart_beat did not return anything - this should not happen"
+
+        heart_beat = Phase2WorkItem(
+            phase2_source_dir=result["directory"],
+            state=result["state"],
+            heartbeat=result["heartbeat"])
+        heart_beat.pid = result["pid"]
+        heart_beat.host = result["host"]
+
+        logging.debug("get_heart_beat returning {0}".format(heart_beat))
+        return heart_beat
 
     def dump(self):
         with sqlite3.connect(
