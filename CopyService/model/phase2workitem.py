@@ -10,7 +10,14 @@ class Phase2WorkItem(object):
     _states = ["Init", "CopyOrig", "ReAcl", "Move", "Cleanup", "Completed"]
     heart_beat_max_threshold_in_sec = 60
 
-    def __init__(self, phase2_source_dir, state="Init", heartbeat=None):
+    def __init__(self, phase2_source_dir, phase2_source_dir_last_modified, state="Init", heartbeat=None):
+        """
+        :type phase2_source_dir: str
+        :type phase2_source_dir_last_modified: datetime.datetime
+        :type state: str
+        :type heartbeat: datetime.datetime
+        :return:
+        """
 
         # Removing this Assert - in a multi threaded scenario it is quite possible to this directory not to exist
         # by the time this code executes - some other process already completed work and deleted it
@@ -20,6 +27,7 @@ class Phase2WorkItem(object):
         # assert os.path.exists(phase2_source_dir), \
         #    "Unable to locate phase2_source_dir {0}".format(phase2_source_dir)
         self.phase2_source_dir = os.path.abspath(phase2_source_dir)
+        self.phase2_source_dir_last_modified = phase2_source_dir_last_modified
 
         phase2_path_calculator = Phase2PathCalculator(self.phase2_source_dir)
         self.phase1_source_dir = phase2_path_calculator.get_phase1_source_dir()
@@ -41,17 +49,20 @@ class Phase2WorkItem(object):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.phase2_source_dir == other.phase2_source_dir and \
+                   self.phase2_source_dir_last_modified == other.phase2_source_dir_last_modified and \
                    self.state == other.state and \
                    self.heartbeat == other.heartbeat
 
     def __str__(self):
-        result = "State:" + self.state + "\n" + \
-                 "Phase1 Source:" + self.phase1_source_dir + "\n" + \
-                 "Phase2 Source:" + self.phase2_source_dir + "\n" + \
-                 "Target:" + self.target_dir + "\n" + \
-                 "Host:" + self.host + "\n" + \
-                 "PID:" + str(self.pid) + "\n" + \
-                 "ACL Template Dir:" + self.acl_template_dir
+        result = "State:{0}\n".format(self.state) + \
+                 "Phase1 Source:{0}\n".format(self.phase1_source_dir) + \
+                 "Phase2 Source:{0}\n".format(self.phase2_source_dir) + \
+                 "Phase2 Source Last Modified:{0}\n".format(
+                     self.phase2_source_dir_last_modified.strftime("%Y-%m-%d %H:%M:%S")) + \
+                 "Target:{0}\n".format(self.target_dir) + \
+                 "Host:{0}\n".format(self.host) + \
+                 "PID:{0}\n".format(str(self.pid)) + \
+                 "ACL Template Dir:{0}".format(self.acl_template_dir)
 
         if self.heartbeat:
             result = result + "\n" + self.heartbeat.strftime("%Y-%m-%d %H:%M:%S")

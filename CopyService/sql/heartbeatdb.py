@@ -16,11 +16,13 @@ class HeartBeatDb:
             result = cursor.fetchone()
             if not result:
                 cursor.execute("CREATE TABLE heartbeats "
-                               "(directory TEXT NOT NULL PRIMARY KEY, "
+                               "(directory TEXT NOT NULL, "
+                               "directory_last_modified timestamp NOT NULL, "
                                "host TEXT NOT NULL, "
                                "pid TEXT NOT NULL, "
                                "heartbeat timestamp NOT NULL, "
-                               "state TEXT NOT NULL)")
+                               "state TEXT NOT NULL, "
+                               "PRIMARY KEY (directory, directory_last_modified))")
 
     def try_to_take_ownership(self, work_item):
         """
@@ -43,8 +45,14 @@ class HeartBeatDb:
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
                 cursor.execute \
-                    ('INSERT INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                     (work_item.phase2_source_dir, work_item.host, work_item.pid, work_item.heartbeat, work_item.state))
+                    ('INSERT INTO heartbeats (directory, directory_last_modified, host, pid, heartbeat, state) '
+                     'VALUES (?,?,?,?,?,?)',
+                     (work_item.phase2_source_dir,
+                      work_item.phase2_source_dir_last_modified,
+                      work_item.host,
+                      work_item.pid,
+                      work_item.heartbeat,
+                      work_item.state))
         except sqlite3.IntegrityError as e:
             logging.debug(e)
             return False
@@ -57,14 +65,18 @@ class HeartBeatDb:
         :return:
         """
         logging.debug("ENTERING remove_work_item")
-        # logging.debug("Recieved work_item to remove:\n{0}".format(work_item))
+        # logging.debug("Relieved work_item to remove:\n{0}".format(work_item))
         try:
             with sqlite3.connect(
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                cursor.execute('DELETE FROM heartbeats WHERE directory=(?) AND host=(?) AND pid=(?)',
-                               (work_item.phase2_source_dir, work_item.host, work_item.pid))
+                cursor.execute('DELETE FROM heartbeats '
+                               'WHERE directory=(?) AND directory_last_modified=(?) AND host=(?) AND pid=(?)',
+                               (work_item.phase2_source_dir,
+                                work_item.phase2_source_dir_last_modified,
+                                work_item.host,
+                                work_item.pid))
         except sqlite3.IntegrityError as e:
             logging.debug(e)
             raise
@@ -82,9 +94,15 @@ class HeartBeatDb:
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                cursor.execute \
-                    ('INSERT OR REPLACE INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                     (work_item.phase2_source_dir, work_item.host, work_item.pid, work_item.heartbeat, work_item.state))
+                cursor.execute ('INSERT OR REPLACE INTO heartbeats '
+                                '(directory, directory_last_modified, host, pid, heartbeat, state)'
+                                ' VALUES (?,?,?,?,?,?)',
+                                (work_item.phase2_source_dir,
+                                 work_item.phase2_source_dir_last_modified,
+                                 work_item.host,
+                                 work_item.pid,
+                                 work_item.heartbeat,
+                                 work_item.state))
         except sqlite3.Error as e:
             logging.debug(e.message)
             raise
@@ -109,6 +127,7 @@ class HeartBeatDb:
 
         heart_beat = Phase2WorkItem(
             phase2_source_dir=result["directory"],
+            phase2_source_dir_last_modified=result["directory_last_modified"],
             state=result["state"],
             heartbeat=result["heartbeat"])
         heart_beat.pid = result["pid"]
@@ -116,21 +135,6 @@ class HeartBeatDb:
 
         logging.debug("get_heart_beat returning {0}".format(heart_beat))
         return heart_beat
-
-    def dump(self):
-        with sqlite3.connect(
-                self._data_file_path,
-                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
-            cursor = connection.cursor()
-            cursor.execute('SELECT * FROM heartbeats')
-            results = cursor.fetchall()
-
-        heart_beats = []
-        for result in results:
-            heart_beats.append(
-                Phase2WorkItem(phase2_source_dir=result["directory"], state=result["state"]))
-
-        return heart_beats
 
     def clear_heart_beat_table(self):
         with sqlite3.connect(

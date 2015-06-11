@@ -2,6 +2,7 @@ __author__ = 'alextc'
 import glob
 import os
 import logging
+import datetime
 from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
 from aop.logstartandexit import LogEntryAndExit
@@ -14,12 +15,28 @@ class FsUtils(object):
         pass
 
     @staticmethod
+    @LogEntryAndExit(logging.getLogger())
     def get_source_directories(root_path):
-        logging.debug("\n\tENTERING get_source_directories")
         logging.debug("\n\tPARAMETER root_path\n\t\t%s", root_path)
         result = glob.glob(root_path)
         logging.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result))
         return result
+
+    @staticmethod
+    @LogEntryAndExit(logging.getLogger())
+    def try_to_get_dir_last_modified_time(dir_name):
+        """
+        :type dir_name: str
+        :rtype: datetime.datetime
+        """
+        try:
+            t = os.path.getmtime(dir_name)
+            return datetime.datetime.fromtimestamp(t)
+        except IOError as e:
+            logging.debug(e)
+            logging.debug("Attempt to get last modified timestamp failed for {0}".format(dir_name))
+            logging.debug("Assuming that the directory was already processed, returning False")
+            return False
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())

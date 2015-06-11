@@ -6,6 +6,7 @@ from model.phase2workitem import Phase2WorkItem
 from sql.heartbeatdb import HeartBeatDb
 from cluster.heartbeatmanager import HeartBeatManager
 from aop.logstartandexit import LogEntryAndExit
+from fs.fsutils import FsUtils
 
 
 class WorkScheduler(object):
@@ -37,7 +38,13 @@ class WorkScheduler(object):
 
         random_dir = random.choice(potential_work_inputs)
         logging.debug("Randomly selected directory: {0}".format(random_dir))
-        return Phase2WorkItem(random_dir)
+        last_modified = FsUtils.try_to_get_dir_last_modified_time(random_dir)
+        if not last_modified:
+            logging.debug("Attempt to get last modified time stamp failed.")
+            logging.debug("Assuming that the directory was already processed by other worker. Returning None")
+            return None
+
+        return Phase2WorkItem(random_dir, last_modified)
 
     @LogEntryAndExit(logging.getLogger())
     def _try_to_take_ownership(self, potential_phase2_work_item):

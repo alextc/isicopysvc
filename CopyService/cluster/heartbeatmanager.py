@@ -19,8 +19,8 @@ class HeartBeatManager(object):
         self._last_heart_beat = None
 
     @LogEntryAndExit(logging.getLogger())
-    def write_heart_beat(self):
-        if self._should_write_heart_beat():
+    def write_heart_beat(self, force=False):
+        if force or self._should_write_heart_beat():
             self._phase2_work_item.heartbeat = datetime.datetime.now()
             self._heart_beat_db.write_heart_beat(self._phase2_work_item)
             self._last_heart_beat = self._phase2_work_item.heartbeat
