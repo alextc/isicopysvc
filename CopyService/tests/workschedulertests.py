@@ -43,6 +43,20 @@ class WorkSchedulerTests(unittest.TestCase):
         # Cleanup
         shutil.rmtree(phase2_work_item.phase2_source_dir)
 
+
+    def test_must_not_claim_phase2_work_item_when_item_is_already_processed(self):
+        # Setup
+        phase2_work_item = self._generate_phase2_work_item()
+        result = WorkSchedulerTests._work_scheduler.try_get_new_phase2_work_item()
+        self.assertTrue(result)
+        shutil.rmtree(phase2_work_item.phase2_source_dir)
+
+        # Test - Trying to claim already processed item - item was removed from staging
+        result = WorkSchedulerTests._work_scheduler.try_get_new_phase2_work_item()
+
+        # Validate
+        self.assertFalse(result)
+
     def _generate_phase2_work_item(self):
         """
         :rtype: Phase2WorkItem
