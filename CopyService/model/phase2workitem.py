@@ -7,13 +7,18 @@ from common.datetimeutils import DateTimeUtils
 
 
 class Phase2WorkItem(object):
-    _states = ["Init", "CopyOrig", "ReAcl", "Move", "Cleanup"]
-    heart_beat_max_threshold_in_sec = 5
+    _states = ["Init", "CopyOrig", "ReAcl", "Move", "Cleanup", "Completed"]
+    heart_beat_max_threshold_in_sec = 60
 
     def __init__(self, phase2_source_dir, state="Init", heartbeat=None):
 
-        assert os.path.exists(phase2_source_dir), \
-            "Unable to locate phase2_source_dir {0}".format(phase2_source_dir)
+        # Removing this Assert - in a multi threaded scenario it is quite possible to this directory not to exist
+        # by the time this code executes - some other process already completed work and deleted it
+        # The situation should resolve itself when an attempt is made to claim this directory.
+        # at that point the directory is claimed by somebody else.
+        # However, what if the directory is already processed by that time and no longer in sql???
+        # assert os.path.exists(phase2_source_dir), \
+        #    "Unable to locate phase2_source_dir {0}".format(phase2_source_dir)
         self.phase2_source_dir = os.path.abspath(phase2_source_dir)
 
         phase2_path_calculator = Phase2PathCalculator(self.phase2_source_dir)

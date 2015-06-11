@@ -1,5 +1,6 @@
 __author__ = 'alextc'
 import sqlite3
+import os
 from model.phase2workitem import Phase2WorkItem
 import logging
 
@@ -28,6 +29,14 @@ class HeartBeatDb:
         """
         logging.debug("ENTERING")
         # logging.debug("Received work_item to take ownership:\n{0}".format(work_item))
+
+        if not os.path.exists(work_item.phase2_source_dir):
+            logging.debug("try_to_take_ownership was called on path {0} that does not exist.".format(
+                work_item.phase2_source_dir))
+            logging.debug("Assuming that somebody else already processed and clean-up this directory.")
+            logging.debug("Returning False")
+            return False
+
         try:
             with sqlite3.connect(
                     self._data_file_path,
