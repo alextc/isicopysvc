@@ -2,6 +2,7 @@ __author__ = 'alextc'
 import unittest
 from isiapi.getsmblockscommand import GetSmbLocksCommand
 
+
 class GetSmbLocksTests(unittest.TestCase):
 
     def test_must_return_a_record_per_locked_file(self):

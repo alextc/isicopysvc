@@ -7,6 +7,7 @@ import time
 from model.phase2workitem import Phase2WorkItem
 from sql.heartbeatdb import HeartBeatDb
 from cluster.heartbeatmanager import HeartBeatManager
+from fs.fsutils import FsUtils
 
 
 class HeartBeatManagerTests(unittest.TestCase):
@@ -86,7 +87,11 @@ class HeartBeatManagerTests(unittest.TestCase):
         phase2_source_dir_name = random.randint(10000, 900000)
         phase2_source_dir_path = os.path.join(HeartBeatManagerTests._root_path, str(phase2_source_dir_name))
         os.mkdir(phase2_source_dir_path)
-        return Phase2WorkItem(phase2_source_dir=phase2_source_dir_path, state="Init")
+        last_modified = FsUtils.try_to_get_dir_last_modified_time(phase2_source_dir_path)
+        return Phase2WorkItem(
+            phase2_source_dir=phase2_source_dir_path,
+            phase2_source_dir_last_modified=last_modified,
+            state="Init")
 
 if __name__ == '__main__':
     log_message_format = "[%(asctime)s %(process)s: %(message)s"

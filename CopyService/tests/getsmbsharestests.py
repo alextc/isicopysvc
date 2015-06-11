@@ -2,6 +2,7 @@ __author__ = 'alextc'
 import unittest
 from isiapi.getsmbsharescommand import GetSmbSharesCommand
 
+
 class GetSmbSharesTests(unittest.TestCase):
 
     def test_must_return_a_record_per_smb_share(self):
