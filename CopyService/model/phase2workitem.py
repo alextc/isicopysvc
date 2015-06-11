@@ -65,6 +65,6 @@ class Phase2WorkItem(object):
                  "ACL Template Dir:{0}".format(self.acl_template_dir)
 
         if self.heartbeat:
-            result = result + "\n" + self.heartbeat.strftime("%Y-%m-%d %H:%M:%S")
+            result = result + "\nHeartbeat:{0}".format(self.heartbeat.strftime("%Y-%m-%d %H:%M:%S"))
 
         return result
