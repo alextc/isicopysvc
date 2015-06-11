@@ -55,34 +55,9 @@ class HeartBeatManagerTests(unittest.TestCase):
         self.assertEquals(confirmation1, phase2_work_item)
 
         # Writing another heartbeat after sleeping longer then half the heartbeat threshold
-        time.sleep((HeartBeatManager._heart_beat_max_threshold_in_sec / 2) + 1)
+        time.sleep((Phase2WorkItem.heart_beat_max_threshold_in_sec / 2) + 1)
         heart_beat_manager.write_heart_beat()
         confirmation2 = heart_beat_db.get_heart_beat(phase2_work_item.phase2_source_dir)
-        # Nothing should have changed, since the heartbeat was not written
-        print "Confirmation1\n{0}".format(confirmation1)
-        print "Confirmation2\n{0}".format(confirmation2)
-        self.assertNotEquals(confirmation1, confirmation2)
-
-    def test_must_take_over_heart_beating(self):
-        # setup
-        orig_owner_phase2_work_item = self._generate_phase2_work_item()
-
-        # Test
-        heart_beat_db = HeartBeatDb()
-        orig_heart_beat_manager = HeartBeatManager(heart_beat_db, orig_owner_phase2_work_item)
-        orig_heart_beat_manager.write_heart_beat()
-        confirmation1 = heart_beat_db.get_heart_beat(orig_owner_phase2_work_item.phase2_source_dir)
-        self.assertEquals(confirmation1, orig_owner_phase2_work_item)
-
-        # Take over heart beating - different pid or host
-        new_owner_phase2_work_item = orig_owner_phase2_work_item
-        new_owner_phase2_work_item.host = "foo_host"
-        new_heart_beat_manager = HeartBeatManager(heart_beat_db, new_owner_phase2_work_item)
-
-        new_heart_beat_manager.force_ownership_takeover_of_heart_beating()
-        confirmation2 = heart_beat_db.get_heart_beat(new_owner_phase2_work_item.phase2_source_dir)
-
-        # Validate
         # Nothing should have changed, since the heartbeat was not written
         print "Confirmation1\n{0}".format(confirmation1)
         print "Confirmation2\n{0}".format(confirmation2)
@@ -106,20 +81,6 @@ class HeartBeatManagerTests(unittest.TestCase):
 
         # Validation
         self.assertFalse(new_heart_beat_manager.try_to_take_ownership_of_heart_beating())
-
-    def test_must_declare_heart_beat_stale_if_threshold_exceeded(self):
-        # setup
-        phase2_work_item = self._generate_phase2_work_item()
-
-        # Test
-        heart_beat_db = HeartBeatDb()
-        heart_beat_manager = HeartBeatManager(heart_beat_db, phase2_work_item)
-        heart_beat_manager.write_heart_beat()
-
-        time.sleep(HeartBeatManager._heart_beat_max_threshold_in_sec + 1)
-
-        # validate
-        self.assertTrue(heart_beat_manager.is_heart_beat_stale())
 
     def _generate_phase2_work_item(self):
         phase2_source_dir_name = random.randint(10000, 900000)

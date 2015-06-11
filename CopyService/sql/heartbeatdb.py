@@ -3,6 +3,7 @@ import sqlite3
 from model.phase2workitem import Phase2WorkItem
 import logging
 
+
 class HeartBeatDb:
     def __init__(self):
         self._data_file_path = "/ifs/copy_svc/heartbeat.db"
@@ -11,7 +12,7 @@ class HeartBeatDb:
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='heartbeats'")
-            result = cursor.fetchone();
+            result = cursor.fetchone()
             if not result:
                 cursor.execute("CREATE TABLE heartbeats "
                                "(directory TEXT NOT NULL PRIMARY KEY, "
@@ -41,27 +42,6 @@ class HeartBeatDb:
 
         return True
 
-    def force_ownership_take_over(self, work_item):
-        """
-        :type work_item: Phase2WorkItem
-        :return:
-        """
-        logging.debug("ENTERING")
-        # logging.debug("Received work_item to forcefully take ownership:\n{0}".format(work_item))
-        try:
-            with sqlite3.connect(
-                    self._data_file_path,
-                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
-                cursor = connection.cursor()
-                cursor.execute \
-                    ('INSERT OR REPLACE INTO heartbeats (directory, host, pid, heartbeat, state) VALUES (?,?,?,?,?)',
-                     (work_item.phase2_source_dir, work_item.host, work_item.pid, work_item.heartbeat, work_item.state))
-        except sqlite3.IntegrityError as e:
-            logging.debug(e)
-            return False
-
-        return True
-
     def remove_work_item(self, work_item):
         """
         :type work_item: Phase2WorkItem
@@ -74,7 +54,8 @@ class HeartBeatDb:
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                cursor.execute('DELETE FROM heartbeats WHERE directory = (?)', (work_item.phase2_source_dir,))
+                cursor.execute('DELETE FROM heartbeats WHERE directory=(?) AND host=(?) AND pid=(?)',
+                               (work_item.phase2_source_dir, work_item.host, work_item.pid))
         except sqlite3.IntegrityError as e:
             logging.debug(e)
             raise
@@ -112,7 +93,10 @@ class HeartBeatDb:
             cursor.execute('SELECT * FROM heartbeats WHERE directory = (?)', (directory,))
             result = cursor.fetchone()
 
-        assert result, "get_heart_beat did not return anything - this should not happen"
+        # no matching record found
+        if not result:
+            logging.debug("get_heart_beat did not return anything")
+            return None
 
         heart_beat = Phase2WorkItem(
             phase2_source_dir=result["directory"],

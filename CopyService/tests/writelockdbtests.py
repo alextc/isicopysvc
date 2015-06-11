@@ -1,7 +1,7 @@
 import unittest
 import os
 from sql.writelockdb import WriteLockDb
-from Common.datetimewrapper import DateTimeWrapper
+from common.datetimeutils import DateTimeUtils
 
 class WriteLockDbTests(unittest.TestCase):
     _db_path = "/ifs/copy_svc/files.db"
@@ -14,7 +14,7 @@ class WriteLockDbTests(unittest.TestCase):
 
     def test_must_insert_new_lock_file_record(self):
         wrapper = WriteLockDb(self._db_path)
-        datetime_wrapper = DateTimeWrapper()
+        datetime_wrapper = DateTimeUtils()
         path = "/ifs/zones/ad1"
         dt = datetime_wrapper.get_current_utc_datetime_as_formatted_string()
         wrapper.insert_or_replace_last_seen(path, dt)
@@ -33,7 +33,7 @@ class WriteLockDbTests(unittest.TestCase):
         wrapper = WriteLockDb(self._db_path)
 
         #Setup
-        datetime_wrapper = DateTimeWrapper()
+        datetime_wrapper = DateTimeUtils()
         path = "/ifs/zones/ad1"
         dt = datetime_wrapper.get_current_utc_datetime_as_formatted_string()
         wrapper.insert_or_replace_last_seen(path, dt)

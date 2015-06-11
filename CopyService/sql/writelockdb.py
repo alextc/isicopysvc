@@ -1,7 +1,7 @@
 __author__ = 'alextc'
 import sqlite3
 import os
-from Common.datetimewrapper import DateTimeWrapper
+from common.datetimeutils import DateTimeUtils
 
 class WriteLockDb:
 
@@ -22,7 +22,7 @@ class WriteLockDb:
         if not os.path.exists(path):
             raise ValueError("Directory does not exist '{}'".format(path))
 
-        datetime_wrapper = DateTimeWrapper()
+        datetime_wrapper = DateTimeUtils()
         if not datetime_wrapper.is_datetime_in_expected_format(date):
             raise ValueError("Supplied date was not in the expected format")
 
@@ -35,7 +35,7 @@ class WriteLockDb:
         if not os.path.exists(path):
             raise ValueError("Directory does not exist '{}'".format(path))
 
-        datetime_wrapper = DateTimeWrapper()
+        datetime_wrapper = DateTimeUtils()
         if not datetime_wrapper.is_datetime_in_expected_format(date):
             raise ValueError("Supplied date was not in the expected format")
 

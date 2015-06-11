@@ -1,5 +1,5 @@
 __author__ = 'alextc'
-from Common.stringbuilder import StringBuilder
+from common.stringbuilder import StringBuilder
 
 class DictToString(object):
     @staticmethod

@@ -1,16 +1,18 @@
 __author__ = 'alextc'
 import glob
 import logging
-import socket
 import os
 from model.phase2workitem import Phase2WorkItem
 from sql.heartbeatdb import HeartBeatDb
+from cluster.heartbeatmanager import HeartBeatManager
+
 
 class WorkScheduler(object):
     def __init__(self):
         self._phase1_output_path = "/ifs/zones/*/copy_svc/staging/*/*/"
         self._max_retry_count = 5
         self._max_stale_hb_time_in_seconds = 30
+        self._heart_beat_db = HeartBeatDb()
 
     def try_get_new_phase2_work_item(self):
         potential_work_inputs = self.get_potential_work()
@@ -22,38 +24,19 @@ class WorkScheduler(object):
 
         # logging.debug("Located folders in the staging area:\n{0}".format("\n".join(potential_work_inputs)))
         for potential_work_input in potential_work_inputs:
-            logging.debug("About to claim directory {0}".format(potential_work_input))
+            if not os.path.exists(potential_work_input):
+                logging.debug("Directory {0} is not longer present. Assuming somebody else processed it".format(
+                        potential_work_input))
+                continue
+
+            logging.debug("About to try claiming directory {0}".format(potential_work_input))
             potential_phase2_work_item = Phase2WorkItem(potential_work_input)
             if self.try_to_take_ownership(potential_phase2_work_item):
                 logging.debug("Found and claimed new work_item {0}".format(potential_work_input))
-                # now that the work is claimed let's write our first heartbeat for this work item
-                heart_beat_db = HeartBeatDb()
-                heart_beat_db.write_heart_beat(potential_phase2_work_item)
-                # logging.debug("Returning new phase2 work item{0}".format(potential_phase2_work_item))
-                # logging.debug("Returning new phase2 work item{0}".format(potential_phase2_work_item.source_dir))
                 return potential_phase2_work_item
 
-        logging.debug("Returning new False could not find or claim new work")
+        logging.debug("Returning False could neither find or claim new work")
         return False
-
-    def try_to_get_stranded_work(self):
-        if not self.get_potential_work():
-            return False
-
-        potential_stranded_work_inputs = glob.glob(self._phase1_output_path)
-        filter(lambda x: x.endswith("_in_process"), potential_stranded_work_inputs)
-        # logging.debug("Located stranded folders:\n{0}".format("\n".join(potential_stranded_work_inputs)))
-
-        for potential_strand_target in potential_stranded_work_inputs:
-            if self.is_heartbeat_stale(potential_strand_target):
-                work_item = self.try_to_take_ownership(self.get_original_source(potential_strand_target))
-                if work_item:
-                    heart_beat_db = HeartBeatDb()
-                    heart_beat_db.write_heart_beat(work_item.source_dir, socket.gethostname())
-                    # logging.debug("returning {0}", work_item)
-                    return work_item
-            else:
-                return False
 
     def get_potential_work(self):
         potential_work_inputs = glob.glob(self._phase1_output_path)
@@ -62,20 +45,26 @@ class WorkScheduler(object):
             logging.debug("No new or stranded work: exiting")
             return
 
-        # TODO: Check for Stranded Work
         logging.debug("yes there is potential work")
         return potential_work_inputs
 
-    def is_heartbeat_stale(self, directory):
-        heart_beat_db = HeartBeatDb()
-        heart_beat = heart_beat_db.get_heart_beat(directory)
-        #TODO: check if heartbeat is stale
-        return False
-
     def try_to_take_ownership(self, potential_phase2_work_item):
-        heart_beat_db = HeartBeatDb()
-        is_attempt_success =  heart_beat_db.try_to_take_ownership(potential_phase2_work_item)
-        # TODO: Add logic to detect stale hearbeat and force membership change
+        heart_beat_manager = HeartBeatManager(self._heart_beat_db, potential_phase2_work_item)
+        existing_heart_beat = heart_beat_manager.get_heart_beat()
+        if existing_heart_beat and not existing_heart_beat.is_heart_beat_stale():
+            logging.debug("Attempt to own dir {0} failed, since it is actively owned by {1}:{2}".format(
+                existing_heart_beat.phase2_source_dir,
+                existing_heart_beat.heartbeat,
+                existing_heart_beat.pid))
+            return False
 
+        if existing_heart_beat and existing_heart_beat.is_heart_beat_stale():
+            logging.debug("Detected stale heartbeat for {0}. Attempting to take over".format(existing_heart_beat))
+            if not heart_beat_manager.try_to_remove_stale_heart_beat_record():
+                logging.debug("Attempt to remove stale record for {0} failed."
+                              " Assuming somebody else already done it.".format(existing_heart_beat.phase2_source_dir))
+                return False
+
+        is_attempt_success = heart_beat_manager.try_to_take_ownership_of_heart_beating()
         logging.debug("Take ownership command completed: {0}".format(is_attempt_success))
         return is_attempt_success

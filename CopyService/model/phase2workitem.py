@@ -3,10 +3,12 @@ import os
 import socket
 import datetime
 from model.phase2pathcalculator import Phase2PathCalculator
+from common.datetimeutils import DateTimeUtils
 
 
 class Phase2WorkItem(object):
     _states = ["Init", "CopyOrig", "ReAcl", "Move", "Cleanup"]
+    heart_beat_max_threshold_in_sec = 5
 
     def __init__(self, phase2_source_dir, state="Init", heartbeat=None):
 
@@ -25,6 +27,11 @@ class Phase2WorkItem(object):
             self.heartbeat = datetime.datetime.now()
         else:
             self.heartbeat = heartbeat
+
+    def is_heart_beat_stale(self):
+        result = DateTimeUtils.get_total_seconds_for_timedelta(datetime.datetime.now() - self.heartbeat) > \
+                 Phase2WorkItem.heart_beat_max_threshold_in_sec
+        return result
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):

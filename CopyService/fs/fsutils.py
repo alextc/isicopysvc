@@ -5,6 +5,8 @@ import logging
 from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
 from aop.logstartandexit import LogEntryAndExit
+from cluster.heartbeatmanager import HeartBeatManager
+
 
 class FsUtils(object):
 
@@ -21,7 +23,13 @@ class FsUtils(object):
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())
-    def reacl_tree(target_dir, template_dir):
+    def reacl_tree(target_dir, template_dir, heart_beat_manager):
+        """
+        :param target_dir:
+        :param template_dir:
+        :type heart_beat_manager: HeartBeatManager
+        :return:
+        """
         logging.debug("Template:{0}".format(template_dir))
         logging.debug("Target:{0}".format(target_dir))
 
@@ -36,6 +44,8 @@ class FsUtils(object):
             for name in files:
                 set_acl_on_file_command = SetAclCommand(os.path.join(root, name), acl_to_apply)
                 set_acl_on_file_command.execute()
+                heart_beat_manager.write_heart_beat()
             for name in dirs:
                 set_acl_on_dir_command = SetAclCommand(os.path.join(root, name), acl_to_apply)
                 set_acl_on_dir_command.execute()
+                heart_beat_manager.write_heart_beat()

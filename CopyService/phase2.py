@@ -4,16 +4,18 @@ from work.processpool import ProcessPool
 from work.workscheduler import WorkScheduler
 from sql.heartbeatdb import HeartBeatDb
 from fs.fsutils import FsUtils
-
-FORMAT = "[%(asctime)s %(process)s %(message)s"
-logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG, format=FORMAT)
+from cluster.heartbeatmanager import HeartBeatManager
 
 def start_workflow(work_item):
     logging.debug("ENTERING")
     # logging.debug("Received work item to process:\n{0}".format(work_item))
 
     if work_item.state == "ReAcl":
-        FsUtils.reacl_tree(work_item.phase2_source_dir, work_item.acl_template_dir)
+
+        FsUtils.reacl_tree(
+            work_item.phase2_source_dir,
+            work_item.acl_template_dir,
+            HeartBeatManager(HeartBeatDb(), work_item))
         logging.debug("Setting state to Move")
         work_item.state = "Move"
 
@@ -24,14 +26,15 @@ def start_workflow(work_item):
         work_item.state = "Cleanup"
 
     if work_item.state == "Cleanup":
-        # TODO: remove this comment below once phase1 is in place
-        # shutil.rmtree(work_item.phase1_source_dir)
         HeartBeatDb().remove_work_item(work_item)
         return
 
     raise ValueError("Unexpected state of a work_item {0}", work_item)
 
 if __name__ == '__main__':
+    FORMAT = "[%(asctime)s %(process)s %(message)s"
+    logging.basicConfig(filename='/ifs/copy_svc/wip.log', level=logging.DEBUG, format=FORMAT)
+
     for i in range(500):
         process_pool = ProcessPool()
         if not process_pool.is_max_process_count_reached():
@@ -40,4 +43,3 @@ if __name__ == '__main__':
                 logging.debug("Got new work_item {0}".format(my_work_item))
                 my_work_item.state = "ReAcl"
                 start_workflow(my_work_item)
-

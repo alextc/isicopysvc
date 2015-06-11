@@ -1,6 +1,6 @@
 __author__ = 'alextc'
 import isi.rest
-from Common.dicttostring import DictToString
+from common.dicttostring import DictToString
 
 class NamespaceCommand(object):
     _socket_type = isi.rest.OAPI_SOCKET_PATH

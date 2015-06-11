@@ -28,8 +28,10 @@ class Phase2PathCalculator(object):
             "Directory for to_zone {0} from_path not found}".format(self._from_zone)
 
         self._phase2_source_dir = phase2_source_dir
-        assert os.path.exists(phase2_source_dir), \
-            "Unable to locate phase2_source_dir {0}".format(phase2_source_dir)
+        # Removing this Assert - in a multi threaded scenario it is quite possible to this directory not to exist
+        # by the time this code executes - some other process already completed work and deleted it
+        # assert os.path.exists(phase2_source_dir), \
+        #    "Unable to locate phase2_source_dir {0}".format(phase2_source_dir)
 
         # this is just the directory name - no path
         self._dir_name = os.path.split(self._phase2_source_dir)[1]
