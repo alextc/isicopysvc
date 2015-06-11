@@ -3,6 +3,7 @@ import unittest
 import random
 import os
 import shutil
+import time
 from sql.writelockdb import WriteLockDb
 from work.workscheduler import WorkScheduler
 from model.phase2workitem import Phase2WorkItem
@@ -28,6 +29,22 @@ class WorkSchedulerTests(unittest.TestCase):
         # Cleanup
         shutil.rmtree(phase2_work_item.phase2_source_dir)
 
+    def test_must_claim_phase2_work_item_when_the_item_has_stale_heartbeat(self):
+        # Setup
+        phase2_work_item = self._generate_phase2_work_item()
+        result = WorkSchedulerTests._work_scheduler.try_get_new_phase2_work_item()
+        self.assertTrue(result)
+
+        # Test
+        time.sleep(Phase2WorkItem.heart_beat_max_threshold_in_sec + 1)
+        result = WorkSchedulerTests._work_scheduler.try_get_new_phase2_work_item()
+
+        # Validate
+        self.assertTrue(result)
+
+        # Cleanup
+        shutil.rmtree(phase2_work_item.phase2_source_dir)
+
     def test_must_not_claim_phase2_work_item_when_item_is_already_claimed(self):
         # Setup
         phase2_work_item = self._generate_phase2_work_item()
@@ -42,7 +59,6 @@ class WorkSchedulerTests(unittest.TestCase):
 
         # Cleanup
         shutil.rmtree(phase2_work_item.phase2_source_dir)
-
 
     def test_must_not_claim_phase2_work_item_when_item_is_already_processed(self):
         # Setup

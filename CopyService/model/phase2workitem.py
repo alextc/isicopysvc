@@ -8,7 +8,7 @@ from common.datetimeutils import DateTimeUtils
 
 class Phase2WorkItem(object):
     _states = ["Init", "CopyOrig", "ReAcl", "Move", "Cleanup", "Completed"]
-    heart_beat_max_threshold_in_sec = 60
+    heart_beat_max_threshold_in_sec = 5
 
     def __init__(self, phase2_source_dir, phase2_source_dir_last_modified, state="Init", heartbeat=None):
         """
