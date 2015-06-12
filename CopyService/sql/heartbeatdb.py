@@ -107,6 +107,7 @@ class HeartBeatDb:
             logging.debug(e.message)
             raise
 
+    # TODO: should not this be directory and the last_modified - otherwise this may return multiple items
     def get_heart_beat(self, directory):
         """
         :type directory: str
