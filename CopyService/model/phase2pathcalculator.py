@@ -1,6 +1,7 @@
 __author__ = 'alextc'
 import os
 
+
 # Example of phase2_source_dir /ifs/zones/ad1/copy_svc/staging/ad2/foobar
 #                               1     2   3       4      5      6    7
 # split func returns one more than the number of items, see below
@@ -16,6 +17,8 @@ class Phase2PathCalculator(object):
             "Unable to locate the root of CopyService {0}".format(Phase2PathCalculator._copy_service_root)
 
         self._from_zone = phase2_source_dir.split('/')[3]
+
+        # TODO: "/" does not need to be there - how did it work so far?
         assert os.path.exists(Phase2PathCalculator._copy_service_root + "/" + self._from_zone), \
             "Directory for from_zone {0} not found}".format(self._from_zone)
         assert os.path.exists(Phase2PathCalculator._copy_service_root + "/" + self._from_zone + Phase2PathCalculator._copy_service_to_sub_path), \
