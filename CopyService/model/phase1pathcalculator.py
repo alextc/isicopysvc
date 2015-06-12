@@ -8,9 +8,9 @@ import os
 # https://docs.python.org/2/library/string.html
 class Phase1PathCalc(object):
 
-    _copy_service_root = "/ifs/zones/"
-    _copy_service_to_sub_path = "/copy_svc/to/"
-    _copy_service_to_staging_sub_path = "/copy_svc/staging/"
+    _copy_service_root = "/ifs/zones"
+    _copy_service_to_sub_path = "copy_svc/to"
+    _copy_service_to_staging_sub_path = "copy_svc/staging"
 
     def __init__(self, phase1_source_dir):
         assert os.path.exists(Phase1PathCalc._copy_service_root), \
@@ -42,11 +42,14 @@ class Phase1PathCalc(object):
               "Unable to locate phase1_source_dir {0}".format(phase1_source_dir)
         self.phase1_source_dir = phase1_source_dir
 
+        self._source_dir_name = os.path.split(self.phase1_source_dir)[1]
+
     def get_phase2_staging_dir(self):
         result = os.path.join(
             Phase1PathCalc._copy_service_root,
             self._from_zone,
             Phase1PathCalc._copy_service_to_staging_sub_path,
-            self._to_zone)
+            self._to_zone,
+            self._source_dir_name)
 
         return result
