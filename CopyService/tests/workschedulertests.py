@@ -4,7 +4,7 @@ import random
 import os
 import shutil
 import time
-from sql.writelockdb import WriteLockDb
+from sql.phase1db import Phase1Db
 from work.workscheduler import WorkScheduler
 from model.phase2workitem import Phase2WorkItem
 from fs.fsutils import FsUtils
@@ -12,7 +12,7 @@ from fs.fsutils import FsUtils
 
 class WorkSchedulerTests(unittest.TestCase):
 
-    _heart_beat_db_wrapper = WriteLockDb("/ifs/copy_svc/files.db")
+    _heart_beat_db_wrapper = Phase1Db("/ifs/copy_svc/files.db")
     _work_scheduler = WorkScheduler()
     _root_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
 

@@ -40,6 +40,22 @@ class FsUtils(object):
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())
+    def try_to_get_dir_created_time(dir_name):
+        """
+        :type dir_name: str
+        :rtype: datetime.datetime
+        """
+        try:
+            t = os.path.getctime(dir_name)
+            return datetime.datetime.fromtimestamp(t)
+        except IOError as e:
+            logging.debug(e)
+            logging.debug("Attempt to get created timestamp failed for {0}".format(dir_name))
+            logging.debug("Assuming that the directory was already processed, returning False")
+            return False
+
+    @staticmethod
+    @LogEntryAndExit(logging.getLogger())
     def reacl_tree(target_dir, template_dir, heart_beat_manager):
         """
         :param target_dir:

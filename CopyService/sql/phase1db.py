@@ -1,11 +1,10 @@
 __author__ = 'alextc'
 import sqlite3
 import os
-from common.datetimeutils import DateTimeUtils
 from model.phase1workitem import Phase1WorkItem
 
 
-class WriteLockDb:
+class Phase1Db:
 
     def __init__(self, data_file_path):
         if not os.path.exists(os.path.dirname(data_file_path)):
@@ -15,16 +14,17 @@ class WriteLockDb:
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='openfiles'")
-            result = cursor.fetchone();
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='phase1_work_items'")
+            result = cursor.fetchone()
             if not result:
-                cursor.execute("CREATE TABLE openfiles "
+                cursor.execute("CREATE TABLE phase1_work_items "
                                "(directory TEXT NOT NULL, "
-                               "directory_last_modified timestamp NOT NULL,"
+                               "created timestamp NOT NULL, "
+                               "last_modified timestamp NOT NULL,"
                                "last_smb_write_lock timestamp NOT NULL, "
-                               "PRIMARY KEY (directory, directory_last_modified))")
+                               "PRIMARY KEY (directory, created))")
 
-    def insert_or_replace_last_seen(self, phase1_work_item):
+    def insert_or_replace_work_item(self, phase1_work_item):
         """
         :type phase1_work_item: Phase1WorkItem
         :return:
@@ -33,17 +33,18 @@ class WriteLockDb:
         assert os.path.exists(phase1_work_item.phase1_source_dir), \
             "Directory does not exist {0}".format(phase1_work_item.phase1_source_dir)
 
-        sql_insert_query = 'INSERT or REPLACE into openfiles ' \
-                           '(directory,directory_last_modified, last_smb_write_lock ) VALUES (?,?,?)'
+        sql_insert_query = 'INSERT or REPLACE into phase1_work_items ' \
+                           '(directory, created, last_modified, last_smb_write_lock ) VALUES (?,?,?,?)'
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             cursor.execute(sql_insert_query, (
                 phase1_work_item.phase1_source_dir,
-                phase1_work_item.last_modified,
-                phase1_work_item.last_smb_lock_detected))
+                phase1_work_item.dir_creation_time,
+                phase1_work_item.dir_last_modified,
+                phase1_work_item.last_smb_write_lock))
 
-    def insert_or_replace_last_seen_ignore_if_exists(self, phase1_work_item):
+    def insert_or_replace_work_item_ignore_if_exists(self, phase1_work_item):
         """
         :type phase1_work_item: Phase1WorkItem
         :return:
@@ -51,17 +52,17 @@ class WriteLockDb:
         assert os.path.exists(phase1_work_item.phase1_source_dir), \
             "Directory does not exist {0}".format(phase1_work_item.phase1_source_dir)
 
-        sql_insert_query = 'INSERT or IGNORE into openfiles ' \
-                           '(directory,directory_last_modified, last_smb_write_lock ) VALUES (?,?,?)'
+        sql_insert_query = 'INSERT or IGNORE into phase1_work_items ' \
+                           '(directory, created, last_modified, last_smb_write_lock ) VALUES (?,?,?,?)'
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
             cursor.execute(sql_insert_query, (
                 phase1_work_item.phase1_source_dir,
-                phase1_work_item.last_modified,
-                phase1_work_item.last_smb_lock_detected))
+                phase1_work_item.dir_creation_time,
+                phase1_work_item.last_smb_write_lock))
 
-    def get_last_seen_record_for_dir(self, phase1_work_item):
+    def get_work_item(self, phase1_work_item):
         """
         :type phase1_work_item: Phase1WorkItem
         :rtype: Phase1WorkItem
@@ -69,27 +70,33 @@ class WriteLockDb:
 
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
+            connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
-            cursor.execute('SELECT * FROM openfiles WHERE directory=? AND last_modified=?',
-                           (phase1_work_item.phase1_source_dir),
-                           (phase1_work_item.last_modified))
+            params = (phase1_work_item.phase1_source_dir, phase1_work_item.dir_creation_time)
+            cursor.execute('SELECT * FROM phase1_work_items WHERE directory=? AND created=?', params)
             result = cursor.fetchone()
 
         if result:
-            phase1_work_item = Phase1WorkItem(phase1_source_dir=result[0], last_modified=result[1])
-            phase1_work_item.last_smb_lock_detected = result[2]
+            phase1_work_item = Phase1WorkItem(
+                source_dir=result["directory"],
+                dir_creation_time=result["created"],
+                dir_last_modified=result["last_modified"])
+            phase1_work_item.last_smb_write_lock = result["last_smb_write_lock"]
             return phase1_work_item
 
-    def delete_last_seen_records(self, path):
+    def remove_work_item(self, phase1_work_item):
+        """
+        :type phase1_work_item: Phase1WorkItem
+        """
         with sqlite3.connect(self._data_file_path) as connection:
             cursor =  connection.cursor()
-            sql_delete_query = "DELETE from openfiles WHERE directory = ?"
-            cursor.execute(sql_delete_query, [path])
+            sql_delete_query = "DELETE from phase1_work_items WHERE directory = ? AND created=?"
+            params = (phase1_work_item.phase1_source_dir, phase1_work_item.dir_creation_time)
+            cursor.execute(sql_delete_query, params)
 
-
-    def clear_last_seen_table(self):
+    def clear_work_items(self):
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor =  connection.cursor()
-            sql_delete_query = "DELETE from openfiles"
+            sql_delete_query = "DELETE from phase1_work_items"
             cursor.execute(sql_delete_query)

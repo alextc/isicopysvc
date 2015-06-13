@@ -5,7 +5,7 @@ import os
 import logging
 import time
 from model.phase2workitem import Phase2WorkItem
-from sql.heartbeatdb import HeartBeatDb
+from sql.phase2db import Phase2Db
 from cluster.heartbeatmanager import HeartBeatManager
 from fs.fsutils import FsUtils
 
@@ -19,7 +19,7 @@ class HeartBeatManagerTests(unittest.TestCase):
         phase2_work_item = self._generate_phase2_work_item()
 
         # Test
-        heart_beat_db = HeartBeatDb()
+        heart_beat_db = Phase2Db()
         heart_beat_manager = HeartBeatManager(heart_beat_db, phase2_work_item)
         heart_beat_manager.write_heart_beat()
 
@@ -32,7 +32,7 @@ class HeartBeatManagerTests(unittest.TestCase):
         phase2_work_item = self._generate_phase2_work_item()
 
         # Test
-        heart_beat_db = HeartBeatDb()
+        heart_beat_db = Phase2Db()
         heart_beat_manager = HeartBeatManager(heart_beat_db, phase2_work_item)
         heart_beat_manager.write_heart_beat()
         confirmation1 = heart_beat_db.get_heart_beat(phase2_work_item.phase2_source_dir)
@@ -49,7 +49,7 @@ class HeartBeatManagerTests(unittest.TestCase):
         phase2_work_item = self._generate_phase2_work_item()
 
         # Test
-        heart_beat_db = HeartBeatDb()
+        heart_beat_db = Phase2Db()
         heart_beat_manager = HeartBeatManager(heart_beat_db, phase2_work_item)
         heart_beat_manager.write_heart_beat()
         confirmation1 = heart_beat_db.get_heart_beat(phase2_work_item.phase2_source_dir)
@@ -69,7 +69,7 @@ class HeartBeatManagerTests(unittest.TestCase):
         orig_owner_phase2_work_item = self._generate_phase2_work_item()
 
         # Test
-        heart_beat_db = HeartBeatDb()
+        heart_beat_db = Phase2Db()
         orig_heart_beat_manager = HeartBeatManager(heart_beat_db, orig_owner_phase2_work_item)
         orig_heart_beat_manager.write_heart_beat()
         confirmation1 = heart_beat_db.get_heart_beat(orig_owner_phase2_work_item.phase2_source_dir)

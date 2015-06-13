@@ -2,7 +2,7 @@ import shutil
 import logging
 from work.processpool import ProcessPool
 from work.workscheduler import WorkScheduler
-from sql.heartbeatdb import HeartBeatDb
+from sql.phase2db import Phase2Db
 from fs.fsutils import FsUtils
 from cluster.heartbeatmanager import HeartBeatManager
 from model.phase2workitem import Phase2WorkItem
@@ -15,7 +15,7 @@ class Phase2(object):
         logging.basicConfig(filename='/ifs/copy_svc/wip.log', level=logging.DEBUG, format=format_logging)
         self.process_pool = ProcessPool()
         self.work_scheduler = WorkScheduler()
-        self.heart_beat_db = HeartBeatDb()
+        self.heart_beat_db = Phase2Db()
 
     @staticmethod
     def start_workflow(work_item, heart_beat_manager):

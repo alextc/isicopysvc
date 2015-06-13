@@ -9,7 +9,7 @@ from fs.fsutils import FsUtils
 class Phase2ItemTests(unittest.TestCase):
     _root_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
 
-    def test_generate_large_number_of_directories(self):
+    def test_must_create_new_phase2_work_item(self):
 
         phase2_source_dir_name = random.randint(10000, 900000)
         phase2_source_dir_path = os.path.join(Phase2ItemTests._root_path, str(phase2_source_dir_name))

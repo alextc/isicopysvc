@@ -1,7 +1,7 @@
 __author__ = 'alextc'
 from fs.fsutils import FsUtils
 from isiapi.getsmblockscommand import GetSmbLocksCommand
-from sql.writelockdb import WriteLockDb
+from sql.phase1db import Phase1Db
 from common.datetimeutils import DateTimeUtils
 import sys
 import logging
@@ -26,23 +26,23 @@ class Phase1(object):
         return result
 
     def clear_db(self):
-        db_wrapper = WriteLockDb(self._db_path)
-        db_wrapper.clear_last_seen_table()
+        db_wrapper = Phase1Db(self._db_path)
+        db_wrapper.clear_work_items()
 
     def write_locks_to_db(self, sources, locks):
         datetime_wrapper = DateTimeUtils()
-        db_wrapper = WriteLockDb(self._db_path)
+        db_wrapper = Phase1Db(self._db_path)
         current_datetime_in_utc = datetime_wrapper.get_current_utc_datetime_as_formatted_string()
 
         for source in sources:
             if source in locks:
-                db_wrapper.insert_or_replace_last_seen(source, current_datetime_in_utc)
+                db_wrapper.insert_or_replace_work_item(source, current_datetime_in_utc)
             else:
-                db_wrapper.insert_or_replace_last_seen_ignore_if_exists(source, current_datetime_in_utc)
+                db_wrapper.insert_or_replace_work_item_ignore_if_exists(source, current_datetime_in_utc)
 
     def dump_db(self):
         print "Dumping Db"
-        db_wrapper = WriteLockDb(self._db_path)
+        db_wrapper = Phase1Db(self._db_path)
         db_wrapper.dump()
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@ import glob
 import logging
 import random
 from model.phase2workitem import Phase2WorkItem
-from sql.heartbeatdb import HeartBeatDb
+from sql.phase2db import Phase2Db
 from cluster.heartbeatmanager import HeartBeatManager
 from aop.logstartandexit import LogEntryAndExit
 from fs.fsutils import FsUtils
@@ -14,7 +14,7 @@ class WorkScheduler(object):
         self._phase1_output_path = "/ifs/zones/*/copy_svc/staging/*/*/"
         self._max_retry_count = 5
         self._max_stale_hb_time_in_seconds = 30
-        self._heart_beat_db = HeartBeatDb()
+        self._heart_beat_db = Phase2Db()
 
     @LogEntryAndExit(logging.getLogger())
     def try_get_new_phase2_work_item(self):

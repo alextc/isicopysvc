@@ -5,17 +5,17 @@ from model.phase2workitem import Phase2WorkItem
 import logging
 
 
-class HeartBeatDb:
+class Phase2Db:
     def __init__(self):
-        self._data_file_path = "/ifs/copy_svc/heartbeat.db"
+        self._data_file_path = "/ifs/copy_svc/phase2.db"
         with sqlite3.connect(
                 self._data_file_path,
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='heartbeats'")
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='phase2_work_items'")
             result = cursor.fetchone()
             if not result:
-                cursor.execute("CREATE TABLE heartbeats "
+                cursor.execute("CREATE TABLE phase2_work_items "
                                "(directory TEXT NOT NULL, "
                                "directory_last_modified timestamp NOT NULL, "
                                "host TEXT NOT NULL, "
@@ -45,7 +45,7 @@ class HeartBeatDb:
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
                 cursor.execute \
-                    ('INSERT INTO heartbeats (directory, directory_last_modified, host, pid, heartbeat, state) '
+                    ('INSERT INTO phase2_work_items (directory, directory_last_modified, host, pid, heartbeat, state) '
                      'VALUES (?,?,?,?,?,?)',
                      (work_item.phase2_source_dir,
                       work_item.phase2_source_dir_last_modified,
@@ -71,7 +71,7 @@ class HeartBeatDb:
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                cursor.execute('DELETE FROM heartbeats '
+                cursor.execute('DELETE FROM phase2_work_items '
                                'WHERE directory=(?) AND directory_last_modified=(?) AND host=(?) AND pid=(?)',
                                (work_item.phase2_source_dir,
                                 work_item.phase2_source_dir_last_modified,
@@ -94,7 +94,7 @@ class HeartBeatDb:
                     self._data_file_path,
                     detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
                 cursor = connection.cursor()
-                cursor.execute ('INSERT OR REPLACE INTO heartbeats '
+                cursor.execute ('INSERT OR REPLACE INTO phase2_work_items '
                                 '(directory, directory_last_modified, host, pid, heartbeat, state)'
                                 ' VALUES (?,?,?,?,?,?)',
                                 (work_item.phase2_source_dir,
@@ -118,7 +118,7 @@ class HeartBeatDb:
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
-            cursor.execute('SELECT * FROM heartbeats WHERE directory = (?)', (directory,))
+            cursor.execute('SELECT * FROM phase2_work_items WHERE directory = (?)', (directory,))
             result = cursor.fetchone()
 
         # no matching record found
@@ -142,5 +142,5 @@ class HeartBeatDb:
                 self._data_file_path,
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
-            sql_delete_query = "DELETE from heartbeats"
+            sql_delete_query = "DELETE from phase2_work_items"
             cursor.execute(sql_delete_query)

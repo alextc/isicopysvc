@@ -12,11 +12,11 @@ class Phase2PathCalculator(object):
     _copy_service_from_sub_path = "copy_svc/from"
     _copy_service_to_sub_path = "copy_svc/to"
 
-    def __init__(self, phase2_source_dir):
+    def __init__(self, source_dir):
         assert os.path.exists(Phase2PathCalculator._copy_service_root), \
             "Unable to locate the root of CopyService {0}".format(Phase2PathCalculator._copy_service_root)
 
-        self._from_zone = phase2_source_dir.split('/')[3]
+        self._from_zone = source_dir.split('/')[3]
 
         from_zone_path = os.path.join(Phase2PathCalculator._copy_service_root, self._from_zone)
         assert os.path.exists(from_zone_path), "Directory for from_zone {0} not found}".format(from_zone_path)
@@ -26,7 +26,7 @@ class Phase2PathCalculator(object):
         assert os.path.exists(from_zone_copy_svc_to_path), \
                 "Directory for from_zone_copy_svc_to_path: {0} not found".format(from_zone_copy_svc_to_path)
 
-        self._to_zone = phase2_source_dir.split('/')[6]
+        self._to_zone = source_dir.split('/')[6]
         assert os.path.exists(os.path.join(
             Phase2PathCalculator._copy_service_root,
             self._to_zone)), \
@@ -37,7 +37,7 @@ class Phase2PathCalculator(object):
             Phase2PathCalculator._copy_service_from_sub_path)), \
                 "Directory for to_zone {0} from_path not found}".format(self._from_zone)
 
-        self._phase2_source_dir = phase2_source_dir
+        self._phase2_source_dir = source_dir
         # Removing this Assert - in a multi threaded scenario it is quite possible to this directory not to exist
         # by the time this code executes - some other process already completed work and deleted it
         # assert os.path.exists(phase2_source_dir), \

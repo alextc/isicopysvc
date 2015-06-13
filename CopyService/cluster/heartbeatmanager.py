@@ -1,5 +1,5 @@
 __author__ = 'alextc'
-from sql.heartbeatdb import HeartBeatDb
+from sql.phase2db import Phase2Db
 from model.phase2workitem import Phase2WorkItem
 import datetime
 import logging
@@ -10,7 +10,7 @@ from common.datetimeutils import DateTimeUtils
 class HeartBeatManager(object):
     def __init__(self, heart_beat_db, phase2_work_item):
         """
-        :type heart_beat_db: HeartBeatDb
+        :type heart_beat_db: Phase2Db
         :type phase2_work_item: Phase2WorkItem
         :return:
         """
