@@ -22,14 +22,14 @@ Work_target:  %(Service)s/staging/*/*
 
 [Intervals]
 # How long to wait for no write seen
-Watcher:  600
+Watcher:  60
 
 # Delay prior to restarting script
 # aka "sleep" time
-Restart:  1
+Restart:  5
 
 # Point at which heartbeat considered stale
-Stale:  30
+Stale:  5
 
 [Variables]
 # Max number of allowed concurrent python instances working
@@ -44,10 +44,19 @@ Formatter:  %Y, %m, %d, %H, %M, %S, %f
 Retry:  5
 
 # max_stale_hb_time_in_seconds
-Stale_HB:  30
+Stale_HB:  5
 
-[Check_running]
+[Check_running_one_node]
 Process:  /ifs/copy_svc/v3.py
-Path:  /ifs/copy_svc/cron_logs.txt
+LogPath:  /ifs
+LogFile:  cron_logs.txt
 Stale:  60
-Rotate:  14
+Rotate:  1
+
+[Check_running_each_node]
+Process:  /ifs/copy_svc/wip.py
+LogPath:  /ifs
+LogFile:  cron_logs_
+Stale:  60
+Rotate:  3
+Running:  5
