@@ -56,6 +56,26 @@ class FsUtils(object):
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())
+    def get_latest_mtime_in_tree(tree_root):
+        """
+        :param tree_root:
+        :rtype: datetime.datetime
+        """
+        assert os.path.exists(tree_root), "tree_root:{0}, does not exist".format(tree_root)
+
+        logging.debug("tree_root:".format(tree_root))
+        latest_mtime = datetime.datetime.min
+        logging.debug("Setting latest_mtime to {0}".format(latest_mtime))
+        for root, dirs, files in os.walk(tree_root, topdown=False):
+            for name in dirs:
+                mtime = FsUtils.try_to_get_dir_last_modified_time(os.path.join(root, name))
+                if latest_mtime < mtime:
+                    latest_mtime = mtime
+
+        return latest_mtime
+
+    @staticmethod
+    @LogEntryAndExit(logging.getLogger())
     def reacl_tree(target_dir, template_dir, heart_beat_manager):
         """
         :param target_dir:
