@@ -9,7 +9,7 @@ from aop.logstartandexit import LogEntryAndExit
 from fs.fsutils import FsUtils
 
 
-class WorkScheduler(object):
+class Phase2WorkScheduler(object):
     def __init__(self):
         self._phase1_output_path = "/ifs/zones/*/copy_svc/staging/*/*/"
         self._max_retry_count = 5

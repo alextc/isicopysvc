@@ -1,7 +1,7 @@
 import shutil
 import logging
 from work.processpool import ProcessPool
-from work.workscheduler import WorkScheduler
+from work.phase2workscheduler import Phase2WorkScheduler
 from sql.phase2db import Phase2Db
 from fs.fsutils import FsUtils
 from cluster.heartbeatmanager import HeartBeatManager
@@ -14,7 +14,7 @@ class Phase2(object):
         format_logging = "[%(asctime)s %(process)s %(message)s"
         logging.basicConfig(filename='/ifs/copy_svc/wip.log', level=logging.DEBUG, format=format_logging)
         self.process_pool = ProcessPool()
-        self.work_scheduler = WorkScheduler()
+        self.work_scheduler = Phase2WorkScheduler()
         self.heart_beat_db = Phase2Db()
 
     @staticmethod

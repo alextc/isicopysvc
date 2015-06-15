@@ -40,8 +40,8 @@ class Phase1Db:
             cursor = connection.cursor()
             cursor.execute(sql_insert_query, (
                 phase1_work_item.phase1_source_dir,
-                phase1_work_item.dir_creation_time,
-                phase1_work_item.dir_last_modified,
+                phase1_work_item.tree_creation_time,
+                phase1_work_item.tree_last_modified,
                 phase1_work_item.last_smb_write_lock))
 
     def insert_or_replace_work_item_ignore_if_exists(self, phase1_work_item):
@@ -59,7 +59,7 @@ class Phase1Db:
             cursor = connection.cursor()
             cursor.execute(sql_insert_query, (
                 phase1_work_item.phase1_source_dir,
-                phase1_work_item.dir_creation_time,
+                phase1_work_item.tree_creation_time,
                 phase1_work_item.last_smb_write_lock))
 
     def get_work_item(self, phase1_work_item):
@@ -72,15 +72,15 @@ class Phase1Db:
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
-            params = (phase1_work_item.phase1_source_dir, phase1_work_item.dir_creation_time)
+            params = (phase1_work_item.phase1_source_dir, phase1_work_item.tree_creation_time)
             cursor.execute('SELECT * FROM phase1_work_items WHERE directory=? AND created=?', params)
             result = cursor.fetchone()
 
         if result:
             phase1_work_item = Phase1WorkItem(
                 source_dir=result["directory"],
-                dir_creation_time=result["created"],
-                dir_last_modified=result["last_modified"])
+                tree_creation_time=result["created"],
+                tree_last_modified=result["last_modified"])
             phase1_work_item.last_smb_write_lock = result["last_smb_write_lock"]
             return phase1_work_item
 
@@ -91,7 +91,7 @@ class Phase1Db:
         with sqlite3.connect(self._data_file_path) as connection:
             cursor =  connection.cursor()
             sql_delete_query = "DELETE from phase1_work_items WHERE directory = ? AND created=?"
-            params = (phase1_work_item.phase1_source_dir, phase1_work_item.dir_creation_time)
+            params = (phase1_work_item.phase1_source_dir, phase1_work_item.tree_creation_time)
             cursor.execute(sql_delete_query, params)
 
     def clear_work_items(self):

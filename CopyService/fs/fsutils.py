@@ -31,7 +31,9 @@ class FsUtils(object):
         """
         try:
             t = os.path.getmtime(dir_name)
-            return datetime.datetime.fromtimestamp(t)
+            result = datetime.datetime.fromtimestamp(t)
+            logging.debug("Returning {0}".format(result))
+            return result
         except IOError as e:
             logging.debug(e)
             logging.debug("Attempt to get last modified timestamp failed for {0}".format(dir_name))
@@ -56,15 +58,15 @@ class FsUtils(object):
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())
-    def get_latest_mtime_in_tree(tree_root):
+    def get_tree_mtime(tree_root):
         """
         :param tree_root:
         :rtype: datetime.datetime
         """
         assert os.path.exists(tree_root), "tree_root:{0}, does not exist".format(tree_root)
 
-        logging.debug("tree_root:".format(tree_root))
-        latest_mtime = datetime.datetime.min
+        logging.debug("tree_root:{0}".format(tree_root))
+        latest_mtime = FsUtils.try_to_get_dir_last_modified_time(tree_root)
         logging.debug("Setting latest_mtime to {0}".format(latest_mtime))
         for root, dirs, files in os.walk(tree_root, topdown=False):
             for name in dirs:
@@ -72,6 +74,7 @@ class FsUtils(object):
                 if latest_mtime < mtime:
                     latest_mtime = mtime
 
+        logging.debug("Returning mtime {0}".format(latest_mtime))
         return latest_mtime
 
     @staticmethod

@@ -19,8 +19,8 @@ class Phase1ItemTests(unittest.TestCase):
         last_modified = FsUtils.try_to_get_dir_last_modified_time(phase1_source_dir_path)
         sut = Phase1WorkItem(
             source_dir=phase1_source_dir_path,
-            dir_creation_time=last_modified,
-            dir_last_modified=last_modified)
+            tree_creation_time=last_modified,
+            tree_last_modified=last_modified)
 
         print sut
 
