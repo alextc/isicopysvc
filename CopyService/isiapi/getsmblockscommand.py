@@ -16,6 +16,7 @@ class GetSmbLocksCommand(PapiCommand):
         raw_response = super(GetSmbLocksCommand, self).execute()
         if raw_response[2]:
             json_payload = json.loads(raw_response[2])
+            # TODO: Refactor with map - convert weird ISI path to normal Unix path
             for openfile in json_payload['openfiles']:
                 if 'write' in openfile['permissions']:
                     dir_unix_style = self.get_dir_part_in_unix_style(openfile['file'])
