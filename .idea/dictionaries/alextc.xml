@@ -6,10 +6,12 @@
       <w>getsmblockscommand</w>
       <w>isiapi</w>
       <w>mtime</w>
+      <w>notused</w>
       <w>openfiles</w>
       <w>papi</w>
       <w>reacl</w>
       <w>sqlite</w>
+      <w>stdout</w>
       <w>utcnow</w>
     </words>
   </dictionary>

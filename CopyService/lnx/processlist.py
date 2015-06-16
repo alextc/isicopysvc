@@ -2,6 +2,7 @@ __author__ = 'alextc'
 from subprocess import Popen, PIPE
 import logging
 
+
 class ProcessList(object):
     def __init__(self):
         self._main_file_name = "phase2.py"

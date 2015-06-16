@@ -5,6 +5,7 @@ from fs.fsutils import FsUtils
 from isiapi.getsmblockscommand import GetSmbLocksCommand
 from common.datetimeutils import DateTimeUtils
 from aop.logstartandexit import LogEntryAndExit
+from model.phase1workitem import Phase1WorkItem
 
 
 class Phase1WorkScheduler(object):
@@ -33,11 +34,29 @@ class Phase1WorkScheduler(object):
         return result
 
     @staticmethod
-    def get_still_dirs():
-        potential_phase1_work_inputs = FsUtils.get_source_directories(Phase1WorkScheduler._phase1_glob_query)
+    def get_potential_phase1_work_items():
+        """
+        :rtype: list[Phase1WorkItem]
+        """
+        phase1_source_dirs = \
+            FsUtils.get_source_directories(Phase1WorkScheduler._phase1_glob_query)
+
+        result = []
+        for phase1_source_dir in phase1_source_dirs:
+            mtime = FsUtils.get_source_directories(phase1_source_dir)
+            result.append(Phase1WorkItem(
+                source_dir=phase1_source_dir,
+                tree_creation_time=mtime,
+                tree_last_modified=mtime))
+
+        # TODO: Filter-out items that are smb write locked or have not yet reached the stillness threshold
+        """
         still_dirs_based_on_mtime = \
             filter(lambda d: Phase1WorkScheduler._is_mtime_stillness_threshold_reached(d),
-                   potential_phase1_work_inputs)
-
+                   phase1_source_dirs)
         smb_locked_dirs = GetSmbLocksCommand(still_dirs_based_on_mtime).execute()
         return list(set(still_dirs_based_on_mtime).difference(set(smb_locked_dirs)))
+        """
+
+        return result
+
