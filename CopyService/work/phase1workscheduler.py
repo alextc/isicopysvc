@@ -49,7 +49,14 @@ class Phase1WorkScheduler(object):
                 tree_creation_time=mtime,
                 tree_last_modified=mtime))
 
-        # TODO: Filter-out items that are smb write locked or have not yet reached the stillness threshold
+        # TODO: Enrich phase1_source_dirs with smb_write_lock_time
+        # Logic
+        # Check if dealing with a new directory based on name and time created
+        # If new -> insert new record set smb_write_lock_time to ctime
+        # If existing directory -> Get smb_write_lock info
+            # if got smb_lock -> update record with new mtime and smb_lock_time
+            # if no smb_lock -> update record with current mtime
+
         """
         still_dirs_based_on_mtime = \
             filter(lambda d: Phase1WorkScheduler._is_mtime_stillness_threshold_reached(d),

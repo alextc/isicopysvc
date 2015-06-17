@@ -4,12 +4,15 @@ from isiapi.namespacecommand import NamespaceCommand
 import logging
 from aop.logstartandexit import LogEntryAndExit
 
+
 class SetAclCommand(NamespaceCommand):
     _function_call_count = 0
     _retry_max_count = 10
     _retry_back_off_in_sec = 1
 
     def __init__(self, path, acl):
+        logging.debug("Initializing SetAclCommand")
+        logging.debug("ACL to apply:\n{0}".format(acl))
         NamespaceCommand.__init__(self, http_verb="PUT", directory=path, qry_dict={'acl': ''}, body_data=acl)
         self._path = path
 

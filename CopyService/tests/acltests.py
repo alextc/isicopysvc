@@ -9,7 +9,7 @@ from isiapi.setaclcommand import SetAclCommand
 from fs.fsutils import FsUtils
 
 
-def receive_signal(signum, stack):
+def receive_signal(signum):
     print 'Received:', signum
 
 signal.signal(signal.SIGTERM, receive_signal)
@@ -43,10 +43,6 @@ class AclTests(unittest.TestCase):
     '''
 
     def test_must_reacl_dir_tree(self):
-        
-        log_message_format = "[%(asctime)s %(process)s: %(message)s"
-        logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG, format=log_message_format)
-
         root_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
         template_path = "/ifs/zones/ad1"
         # we're making 5 paths under root_path
@@ -68,5 +64,7 @@ class AclTests(unittest.TestCase):
         logging.debug("SetAclCommand Executed {0} times".format(SetAclCommand._function_call_count))
 
 if __name__ == '__main__':
+    log_message_format = "[%(asctime)s %(process)s: %(message)s"
+    logging.basicConfig(filename='/ifs/copy_svc/wip.log',level=logging.DEBUG, format=log_message_format)
     unittest.main()
 

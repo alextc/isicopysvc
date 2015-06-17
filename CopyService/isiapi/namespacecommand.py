@@ -2,6 +2,7 @@ __author__ = 'alextc'
 import isi.rest
 from common.dicttostring import DictToString
 
+
 class NamespaceCommand(object):
     _socket_type = isi.rest.OAPI_SOCKET_PATH
     _header_dict = {'Content-type': 'application/json', 'SCRIPT_NAME': '/namespace'}
@@ -33,4 +34,5 @@ class NamespaceCommand(object):
     def __str__(self):
         return "HTTP_VERB: " + self._http_verb + "\n" + \
                "URL_PARTS: " + " ".join(self._url_parts) + "\n" + \
-               "QRY_DICT: " + str(DictToString.build_dict_as_string(self._query_dict))
+               "QRY_DICT: " + str(DictToString.build_dict_as_string(self._query_dict) + "\n" +
+               "BODY_DATA: " + self._body_data)

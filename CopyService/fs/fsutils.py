@@ -79,7 +79,7 @@ class FsUtils(object):
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())
-    def reacl_tree(target_dir, template_dir, heart_beat_manager):
+    def reacl_tree(target_dir, template_dir, heart_beat_manager=None):
         """
         :param target_dir:
         :param template_dir:
@@ -91,17 +91,20 @@ class FsUtils(object):
 
         get_acl_from_template_command = GetAclCommand(template_dir)
         acl_to_apply = get_acl_from_template_command.execute()
+        logging.debug("acl_to_apply:\n{0}".format(acl_to_apply))
 
-        # I don't think I need to set ACL here /ifs/zones/ad1/copy_svc/staging/ad2 ???
-        set_acl_on_root_command = SetAclCommand(target_dir, acl_to_apply)
-        set_acl_on_root_command.execute()
+        # I don't think I need to set ACL here /ifs/zones/ad1/copy_svc/staging/ad2
+        # set_acl_on_root_command = SetAclCommand(target_dir, acl_to_apply)
+        # set_acl_on_root_command.execute()
 
         for root, dirs, files in os.walk(target_dir, topdown=False):
             for name in files:
                 set_acl_on_file_command = SetAclCommand(os.path.join(root, name), acl_to_apply)
                 set_acl_on_file_command.execute()
-                heart_beat_manager.write_heart_beat()
+                if heart_beat_manager:
+                    heart_beat_manager.write_heart_beat()
             for name in dirs:
                 set_acl_on_dir_command = SetAclCommand(os.path.join(root, name), acl_to_apply)
                 set_acl_on_dir_command.execute()
-                heart_beat_manager.write_heart_beat()
+                if heart_beat_manager:
+                    heart_beat_manager.write_heart_beat()
