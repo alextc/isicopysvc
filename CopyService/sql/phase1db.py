@@ -46,7 +46,6 @@ class Phase1Db:
                 phase1_work_item.tree_last_modified,
                 phase1_work_item.last_smb_write_lock))
 
-
     def get_work_item(self, source_dir, ctime):
         """
         :type source_dir: str
@@ -60,17 +59,21 @@ class Phase1Db:
             cursor = connection.cursor()
             params = (source_dir, ctime)
             cursor.execute('SELECT * FROM phase1_work_items WHERE directory=? AND created=?', params)
-            result = cursor.fetchone()
+            result = cursor.fetchall()
 
-        if result:
+            assert (len(result) == 0 or len(result) == 1),\
+                "Phase1 Db is corrupted, only one record should exist per dir_name, ctime combo"
+
+            if not result:
+                return None
+
             phase1_work_item = Phase1WorkItem(
-                source_dir=result["directory"],
-                tree_creation_time=result["created"],
-                tree_last_modified=result["last_modified"])
-            phase1_work_item.last_smb_write_lock = result["last_smb_write_lock"]
+                source_dir=result[0]["directory"],
+                tree_creation_time=result[0]["created"],
+                tree_last_modified=result[0]["last_modified"],
+                smb_write_lock_last_seen=result[0]["last_smb_write_lock"])
+
             return phase1_work_item
-        else:
-            return None
 
     def remove_work_item(self, phase1_work_item):
         """
