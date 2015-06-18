@@ -36,7 +36,7 @@ class Phase1(object):
 
         for source in sources:
             if source in locks:
-                db_wrapper.insert_or_replace_work_item(source, current_datetime_in_utc)
+                db_wrapper.add_or_update_work_item(source, current_datetime_in_utc)
             else:
                 db_wrapper.insert_or_replace_work_item_ignore_if_exists(source, current_datetime_in_utc)
 

@@ -6,11 +6,13 @@ from model.phase1workitem import Phase1WorkItem
 
 class Phase1Db:
 
-    def __init__(self, data_file_path):
-        if not os.path.exists(os.path.dirname(data_file_path)):
-            raise ValueError("Directory does not exist '{}'".format(os.path.dirname(data_file_path)))
+    _data_file_path = "/ifs/copy_svc/phase2.db"
 
-        self._data_file_path = data_file_path
+    def __init__(self):
+        if not os.path.exists(os.path.dirname(Phase1Db._data_file_path)):
+            raise ValueError("Directory does not exist '{}'".format(os.path.dirname(Phase1Db._data_file_path)))
+
+        self._data_file_path = Phase1Db._data_file_path
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
@@ -24,7 +26,7 @@ class Phase1Db:
                                "last_smb_write_lock timestamp NOT NULL, "
                                "PRIMARY KEY (directory, created))")
 
-    def insert_or_replace_work_item(self, phase1_work_item):
+    def add_or_update_work_item(self, phase1_work_item):
         """
         :type phase1_work_item: Phase1WorkItem
         :return:
@@ -44,27 +46,11 @@ class Phase1Db:
                 phase1_work_item.tree_last_modified,
                 phase1_work_item.last_smb_write_lock))
 
-    def insert_or_replace_work_item_ignore_if_exists(self, phase1_work_item):
-        """
-        :type phase1_work_item: Phase1WorkItem
-        :return:
-        """
-        assert os.path.exists(phase1_work_item.phase1_source_dir), \
-            "Directory does not exist {0}".format(phase1_work_item.phase1_source_dir)
 
-        sql_insert_query = 'INSERT or IGNORE into phase1_work_items ' \
-                           '(directory, created, last_modified, last_smb_write_lock ) VALUES (?,?,?,?)'
-        with sqlite3.connect(self._data_file_path,
-                             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
-            cursor = connection.cursor()
-            cursor.execute(sql_insert_query, (
-                phase1_work_item.phase1_source_dir,
-                phase1_work_item.tree_creation_time,
-                phase1_work_item.last_smb_write_lock))
-
-    def get_work_item(self, phase1_work_item):
+    def get_work_item(self, source_dir, ctime):
         """
-        :type phase1_work_item: Phase1WorkItem
+        :type source_dir: str
+        :type ctime: datetime.datetime
         :rtype: Phase1WorkItem
         """
 
@@ -72,7 +58,7 @@ class Phase1Db:
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
-            params = (phase1_work_item.phase1_source_dir, phase1_work_item.tree_creation_time)
+            params = (source_dir, ctime)
             cursor.execute('SELECT * FROM phase1_work_items WHERE directory=? AND created=?', params)
             result = cursor.fetchone()
 
@@ -83,6 +69,8 @@ class Phase1Db:
                 tree_last_modified=result["last_modified"])
             phase1_work_item.last_smb_write_lock = result["last_smb_write_lock"]
             return phase1_work_item
+        else:
+            return None
 
     def remove_work_item(self, phase1_work_item):
         """

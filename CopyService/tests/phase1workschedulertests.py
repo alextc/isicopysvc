@@ -2,26 +2,33 @@ __author__ = 'alextc'
 import unittest
 import random
 import os
-import time
 import logging
 from work.phase1workscheduler import Phase1WorkScheduler
 from model.phase1workitem import Phase1WorkItem
 from fs.fsutils import FsUtils
+from sql.phase1db import Phase1Db
 
 
 class Phase1WorkSchedulerTests(unittest.TestCase):
 
-    _root_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
+    _root_path = "/ifs/zones/ad1/copy_svc/to/ad2"
 
-    def test_must_detect_stillness(self):
+    def test_must_update_phase1_db_when_new_phase1_dir_is_created(self):
+        phase1_db = Phase1Db()
         phase1_work_scheduler = Phase1WorkScheduler()
         phase1_item = self._generate_phase1_work_item()
         self.assertTrue(os.path.exists(phase1_item.phase1_source_dir))
         self.assertFalse(
-            phase1_work_scheduler._is_mtime_stillness_threshold_reached(path=phase1_item.phase1_source_dir))
-        time.sleep(Phase1WorkScheduler._mtime_stillness_threshold_in_sec + 1)
+            phase1_db.get_work_item(
+                phase1_item.phase1_source_dir,
+                phase1_item.tree_creation_time))
+
+        phase1_work_scheduler.update_phase1_db()
+
         self.assertTrue(
-            phase1_work_scheduler._is_mtime_stillness_threshold_reached(path=phase1_item.phase1_source_dir))
+            phase1_db.get_work_item(
+                phase1_item.phase1_source_dir,
+                phase1_item.tree_creation_time))
 
     def _generate_phase1_work_item(self):
             """

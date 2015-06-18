@@ -6,7 +6,7 @@ from model.phase1pathcalculator import Phase1PathCalc
 
 class Phase1WorkItem(object):
 
-    def __init__(self, source_dir, tree_creation_time, tree_last_modified):
+    def __init__(self, source_dir, tree_creation_time, tree_last_modified, smb_write_lock_last_seen=None):
         """
         :type source_dir: str
         :type tree_creation_time: datetime.datetime
@@ -19,7 +19,12 @@ class Phase1WorkItem(object):
         self.phase1_source_dir = os.path.abspath(source_dir)
         self.tree_creation_time = tree_creation_time
         self.tree_last_modified = tree_last_modified
-        self.last_smb_write_lock = tree_last_modified
+
+        if smb_write_lock_last_seen:
+            self.last_smb_write_lock = smb_write_lock_last_seen
+        else:
+            self.last_smb_write_lock = tree_last_modified
+
         self.phase2_staging_dir = Phase1PathCalc(source_dir).get_phase2_staging_dir()
 
     def __eq__(self, other):

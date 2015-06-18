@@ -2,7 +2,7 @@ __author__ = 'alextc'
 import isi.rest
 
 class PapiCommand(object):
-    _socket_type = isi.rest.OAPI_SOCKET_PATH
+    _socket_type = isi.rest.PAPI_SOCKET_PATH
     _timeout = 120
 
     def __init__(self, http_verb, url_parts, query_dict={}, header_dict={}, body_data=''):

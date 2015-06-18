@@ -19,7 +19,7 @@ class Phase1DbTests(unittest.TestCase):
     def test_must_insert_new_lock_file_record(self):
         phase1_work_item = self.create_phase1_work_item()
         phase1_db = Phase1Db(Phase1DbTests._db_path)
-        phase1_db.insert_or_replace_work_item(phase1_work_item)
+        phase1_db.add_or_update_work_item(phase1_work_item)
         confirm = phase1_db.get_work_item(phase1_work_item)
         self.assertEquals(phase1_work_item, confirm)
 

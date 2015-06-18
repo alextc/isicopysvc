@@ -11,7 +11,10 @@ class GetSmbLocksCommand(PapiCommand):
         self._trim_to_paths = trim_to_paths
 
     def execute(self):
-        logging.debug("\n\tPARAMETER trim_to_path:\n\t\t%s", "\n\t\t".join(self._trim_to_paths))
+        """
+        :rtype: list[str]
+        """
+        logging.debug("PARAMETER trim_to_path:\n\t\t%s", "\n\t\t".join(self._trim_to_paths))
         result = []
         raw_response = super(GetSmbLocksCommand, self).execute()
         if raw_response[2]:
