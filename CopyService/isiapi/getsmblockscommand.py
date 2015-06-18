@@ -17,18 +17,21 @@ class GetSmbLocksCommand(PapiCommand):
         logging.debug("PARAMETER trim_to_path:\n\t\t%s", "\n\t\t".join(self._trim_to_paths))
         result = []
         raw_response = super(GetSmbLocksCommand, self).execute()
-        if raw_response[2]:
-            json_payload = json.loads(raw_response[2])
-            # TODO: Refactor with map - convert weird ISI path to normal Unix path
-            for openfile in json_payload['openfiles']:
-                if 'write' in openfile['permissions']:
-                    dir_unix_style = self.get_dir_part_in_unix_style(openfile['file'])
-                    logging.debug("\n\tFOUND Write Lock on %s", dir_unix_style)
-                    for trim_path in self._trim_to_paths:
-                        if (dir_unix_style.startswith(trim_path)) and dir_unix_style not in result:
-                            result.append(dir_unix_style)
 
-        logging.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result))
+        # TODO: Add assertion that checks for OK response status
+        assert raw_response[2], "Failed to get payload from PAPI"
+
+        json_payload = json.loads(raw_response[2])
+        # TODO: Refactor with map - convert weird ISI path to normal Unix path
+        for openfile in json_payload['openfiles']:
+            if 'write' in openfile['permissions']:
+                dir_unix_style = self.get_dir_part_in_unix_style(openfile['file'])
+                logging.debug("FOUND Write Lock on %s", dir_unix_style)
+                for trim_path in self._trim_to_paths:
+                    if (dir_unix_style.startswith(trim_path)) and dir_unix_style not in result:
+                        result.append(dir_unix_style)
+
+        logging.debug("RETURNING:\n\t\t%s", "\n\t\t".join(result))
         return result
 
     @staticmethod

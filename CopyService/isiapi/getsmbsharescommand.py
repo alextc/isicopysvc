@@ -2,6 +2,7 @@ __author__ = 'alextc'
 from isiapi.papicommand import PapiCommand
 import json
 
+
 class GetSmbSharesCommand(PapiCommand):
     def __init__(self, path):
         PapiCommand.__init__(self, "GET", ['1', 'protocols', 'smb', 'shares'])

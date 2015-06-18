@@ -6,7 +6,7 @@ from model.phase1workitem import Phase1WorkItem
 
 class Phase1Db:
 
-    _data_file_path = "/ifs/copy_svc/phase2.db"
+    _data_file_path = "/ifs/copy_svc/phase1.db"
 
     def __init__(self):
         if not os.path.exists(os.path.dirname(Phase1Db._data_file_path)):
