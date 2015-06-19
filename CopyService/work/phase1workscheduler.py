@@ -19,19 +19,19 @@ class Phase1WorkScheduler(object):
         pass
 
     @staticmethod
+    def run():
+        phase1_source_dirs = Phase1WorkScheduler._get_phase1_source_dirs()
+        smb_write_locks = Phase1WorkScheduler._get_smb_write_locks(phase1_source_dirs)
+        Phase1WorkScheduler._update_phase1_db(phase1_source_dirs, smb_write_locks)
+
+    @staticmethod
     @LogEntryAndExit(logging.getLogger())
-    def update_phase1_db(phase1_source_dirs=None, smb_write_locks=None):
+    def _update_phase1_db(phase1_source_dirs, smb_write_locks):
         """
         :type phase1_source_dirs: list[str]
         :type smb_write_locks: list[str]
         :rtype: list[Phase1WorkItem]
         """
-
-        if not phase1_source_dirs:
-            phase1_source_dirs = Phase1WorkScheduler._get_phase1_source_dirs()
-
-        if not smb_write_locks:
-            smb_write_locks = Phase1WorkScheduler._get_smb_write_locks(phase1_source_dirs)
 
         for phase1_source_dir in phase1_source_dirs:
             # TODO: Optimize - get both mtime and ctime at the same time

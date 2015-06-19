@@ -18,7 +18,7 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
         phase1_item = self._generate_phase1_work_item()
 
         # print "About to add_insert\n{0}".format(phase1_item)
-        Phase1WorkScheduler().update_phase1_db([phase1_item.phase1_source_dir, ], [])
+        Phase1WorkScheduler()._update_phase1_db([phase1_item.phase1_source_dir, ], [])
 
         self.assertTrue(
             Phase1Db().get_work_item(
@@ -27,7 +27,7 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
 
     def test_must_update_phase1_db_when_dir_has_smb_write_lock(self):
         phase1_item = self._generate_phase1_work_item()
-        Phase1WorkScheduler().update_phase1_db([phase1_item.phase1_source_dir, ], [])
+        Phase1WorkScheduler()._update_phase1_db([phase1_item.phase1_source_dir, ], [])
         item_at_insertion_time = Phase1Db().get_work_item(
             phase1_item.phase1_source_dir,
             phase1_item.tree_creation_time)
@@ -37,7 +37,7 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
 
         # simulating smb_write_lock by passing the sut as smb_write_locked
         print "About to update smb_write_lock on\n{0}".format(item_at_insertion_time)
-        Phase1WorkScheduler().update_phase1_db(
+        Phase1WorkScheduler()._update_phase1_db(
             [phase1_item.phase1_source_dir, ],
             [phase1_item.phase1_source_dir, ])
 
@@ -51,7 +51,7 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
 
     def test_must_not_update_phase1_db_when_dir_has_no_smb_write_lock(self):
         phase1_item = self._generate_phase1_work_item()
-        Phase1WorkScheduler().update_phase1_db([phase1_item.phase1_source_dir, ], [])
+        Phase1WorkScheduler()._update_phase1_db([phase1_item.phase1_source_dir, ], [])
 
         item_at_insertion_time = Phase1Db().get_work_item(
             phase1_item.phase1_source_dir,
@@ -61,7 +61,7 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
         time.sleep(1)
 
         # simulating lack of smb_write_locks by sending empty list of locked dirs
-        Phase1WorkScheduler().update_phase1_db([phase1_item.phase1_source_dir, ], [])
+        Phase1WorkScheduler()._update_phase1_db([phase1_item.phase1_source_dir, ], [])
 
         item_post_update = Phase1Db().get_work_item(
             phase1_item.phase1_source_dir,
