@@ -36,7 +36,7 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
         time.sleep(1)
 
         # simulating smb_write_lock by passing the sut as smb_write_locked
-        # print "About to update smb_write_lock on\n{0}".format(item_at_insertion_time)
+        print "About to update smb_write_lock on\n{0}".format(item_at_insertion_time)
         Phase1WorkScheduler().update_phase1_db(
             [phase1_item.phase1_source_dir, ],
             [phase1_item.phase1_source_dir, ])
@@ -44,6 +44,8 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
         item_post_update = Phase1Db().get_work_item(
             phase1_item.phase1_source_dir,
             phase1_item.tree_creation_time)
+
+        print "Retrieved item after update\n{0}".format(item_post_update)
 
         self.assertTrue(item_post_update.last_smb_write_lock > item_at_insertion_time.last_smb_write_lock)
 
