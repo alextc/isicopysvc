@@ -2,6 +2,7 @@ __author__ = 'alextc'
 import datetime
 import os
 from model.phase1pathcalculator import Phase1PathCalc
+from common.datetimeutils import DateTimeUtils
 
 
 class Phase1WorkItem(object):
@@ -26,6 +27,37 @@ class Phase1WorkItem(object):
             self.last_smb_write_lock = tree_last_modified
 
         self.phase2_staging_dir = Phase1PathCalc(source_dir).get_phase2_staging_dir()
+
+    def get_stillness_period(self):
+        return DateTimeUtils.get_total_seconds_for_timedelta(datetime.datetime.now() - self.last_smb_write_lock)
+
+    def is_state_valid(self, stillness_threshold_in_sec, phase1_db):
+
+        if abs(self.get_stillness_period() - stillness_threshold_in_sec) <= 1:
+            # This is undefined period values are too close to each other, assuming True
+            return True
+
+        if self.get_stillness_period() > stillness_threshold_in_sec:
+            assert not os.path.exists(self.phase1_source_dir), \
+                "Phase1 source dir should not exist after stillness threshold"
+            assert os.path.exists(self.phase2_staging_dir), \
+                "Phase2 Staging dir should exist after stillness threshold"
+            assert not phase1_db.get_work_item(self.phase1_source_dir, self.tree_creation_time), \
+                "Db record should not exist after stillness threshold"
+        else:
+            assert os.path.exists(self.phase1_source_dir), \
+                "Phase1 source dir {0}\n should exist before stillness threshold expires.\n" \
+                "Time of check {1}\n" \
+                "smb_lock_last_seen {2}".format(
+                    self.phase1_source_dir,
+                    datetime.datetime.now(),
+                    self.last_smb_write_lock)
+            assert not os.path.exists(self.phase2_staging_dir), \
+                "Phase2 Staging dir should not exist after stillness threshold"
+            assert phase1_db.get_work_item(self.phase1_source_dir, self.tree_creation_time), \
+                "Db record should exist before stillness threshold"
+
+        return True
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
