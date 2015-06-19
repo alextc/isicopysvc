@@ -16,11 +16,12 @@ class FsUtils(object):
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())
-    def get_source_directories(root_path):
+    def glob(root_path):
         logging.debug("\n\tPARAMETER root_path\n\t\t%s", root_path)
         result = glob.glob(root_path)
-        logging.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result))
-        return result
+        result_to_abs_path = [os.path.abspath(d) for d in result]
+        logging.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result_to_abs_path))
+        return result_to_abs_path
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())

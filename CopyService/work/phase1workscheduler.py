@@ -41,6 +41,7 @@ class Phase1WorkScheduler(object):
             smb_write_lock_last_seen = \
                 Phase1WorkScheduler._get_new_smb_write_lock_value(
                     phase1_source_dir,
+                    mtime,
                     smb_write_locks,
                     existing_record)
 
@@ -66,7 +67,7 @@ class Phase1WorkScheduler(object):
     @LogEntryAndExit(logging.getLogger())
     def _get_phase1_source_dirs():
         phase1_source_dirs = \
-            FsUtils.get_source_directories(Phase1WorkScheduler._phase1_glob_query)
+            FsUtils.glob(Phase1WorkScheduler._phase1_glob_query)
         return phase1_source_dirs
 
     @staticmethod
@@ -84,11 +85,11 @@ class Phase1WorkScheduler(object):
 
     @staticmethod
     @LogEntryAndExit(logging.getLogger())
-    def _get_new_smb_write_lock_value(phase1_source_dir, smb_write_locks, existing_record):
+    def _get_new_smb_write_lock_value(phase1_source_dir, mtime, smb_write_locks, existing_record):
 
         # This is the first time we see this dir so setting smb_write_lock to now
         if not existing_record:
-            smb_write_lock_last_seen = datetime.datetime.now()
+            smb_write_lock_last_seen = mtime
         # dir has smb write lock so we need to reflect this in db
         elif phase1_source_dir in smb_write_locks:
             smb_write_lock_last_seen = datetime.datetime.now()

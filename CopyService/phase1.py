@@ -16,7 +16,7 @@ class Phase1(object):
 
     def get_sources(self):
         fs = FsUtils()
-        result = fs.get_source_directories(self._root_dir)
+        result = fs.glob(self._root_dir)
         return result
 
     @staticmethod

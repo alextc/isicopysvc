@@ -18,6 +18,17 @@ class DateTimeUtils(object):
     def parse_datetime_from_formatted_string(self, formatted_datetime):
         return datetime.datetime.strptime(formatted_datetime, self._datetime_format_string)
 
+    @staticmethod
+    def datetime_to_formatted_string(date_time):
+        return date_time.strftime(DateTimeUtils._datetime_format_string)
+
+    @staticmethod
+    def datetime_to_timestamp(date_time):
+        """
+        :type date_time: datetime.datetime
+        """
+        return int(date_time.strftime("%s"))
+
     def is_datetime_in_expected_format(self, datetime_formatted_string):
         try:
             formatted = datetime.datetime.strptime(datetime_formatted_string, self._datetime_format_string)

@@ -86,7 +86,7 @@ class Phase1Db:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             params = (threshold, )
-            cursor.execute('SELECT * FROM phase1_work_items WHERE last_smb_write_lock > ?', params)
+            cursor.execute('SELECT * FROM phase1_work_items WHERE last_smb_write_lock < ?', params)
             qry_results = cursor.fetchall()
 
             if not qry_results:
@@ -109,10 +109,14 @@ class Phase1Db:
         :rtype: Phase1WorkItem
         """
 
+        assert \
+            os.path.exists(source_dir),\
+            "Phase1 Db was requested to search for a dir:{0} that does not exist on fs".format(source_dir)
+
         # sqlite needs date in string format when comparing
         # http://stackoverflow.com/questions/1975737/sqlite-datetime-comparison
         # created_param = DateTimeUtils().datetime_to_formatted_string(ctime)
-
+        logging.debug("About to perform search for {0} : {1}".format(source_dir, ctime))
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             connection.row_factory = sqlite3.Row

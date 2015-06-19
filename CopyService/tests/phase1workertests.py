@@ -15,13 +15,14 @@ class Phase1WorkerTests(unittest.TestCase):
     _root_path = "/ifs/zones/ad1/copy_svc/to/ad2"
     _num_dirs_to_gen = 5
 
-    def test_must_move_still_dirs_to_staging(self):
+    def test_must_move_get_still_items_from_db(self):
         phase1_work_item = self._generate_phase1_work_item()
-        print "Created work_item:\n{0}".format(phase1_work_item)
         Phase1WorkScheduler().update_phase1_db()
+
         time.sleep(Phase1Worker._smb_write_lock_stillness_threshold_in_sec + 1)
 
         still_items = Phase1Worker._get_still_dirs()
+        self.assertTrue(len(still_items) > 0)
         self.assertTrue(phase1_work_item in still_items)
 
     def _generate_phase1_work_item(self):
@@ -35,7 +36,7 @@ class Phase1WorkerTests(unittest.TestCase):
             self.assertTrue(os.path.exists(phase1_source_dir_path))
             last_modified = FsUtils.try_to_get_dir_last_modified_time(phase1_source_dir_path)
             self.assertFalse(Phase1Db().get_work_item(
-                phase1_source_dir_name,
+                phase1_source_dir_path,
                 last_modified))
 
             return Phase1WorkItem(
