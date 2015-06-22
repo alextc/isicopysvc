@@ -11,6 +11,8 @@ class Phase1(object):
 
 
 if __name__ == '__main__':
+    phase1_work_scheduler = Phase1WorkScheduler()
+    phase1_worker = Phase1Worker()
     while 1:
-        Phase1WorkScheduler().run()
-        Phase1Worker().run()
+        phase1_work_scheduler.run()
+        phase1_worker.run()

@@ -1,11 +1,10 @@
 __author__ = 'alextc'
-import logging
 import datetime
 from fs.fsutils import FsUtils
 from isiapi.getsmblockscommand import GetSmbLocksCommand
-from aop.logstartandexit import LogEntryAndExit
 from model.phase1workitem import Phase1WorkItem
 from sql.phase1db import Phase1Db
+from log.loggerfactory import LoggerFactory
 
 
 class Phase1WorkScheduler(object):
@@ -16,17 +15,14 @@ class Phase1WorkScheduler(object):
     _smb_write_lock_stillness_threshold_in_sec = 3
 
     def __init__(self):
-        pass
+        self._logger = LoggerFactory.create(Phase1WorkScheduler.__name__)
 
-    @staticmethod
-    def run():
-        phase1_source_dirs = Phase1WorkScheduler._get_phase1_source_dirs()
-        smb_write_locks = Phase1WorkScheduler._get_smb_write_locks(phase1_source_dirs)
-        Phase1WorkScheduler._update_phase1_db(phase1_source_dirs, smb_write_locks)
+    def run(self):
+        phase1_source_dirs = self._get_phase1_source_dirs()
+        smb_write_locks = self._get_smb_write_locks(phase1_source_dirs)
+        self._update_phase1_db(phase1_source_dirs, smb_write_locks)
 
-    @staticmethod
-    @LogEntryAndExit(logging.getLogger())
-    def _update_phase1_db(phase1_source_dirs, smb_write_locks):
+    def _update_phase1_db(self, phase1_source_dirs, smb_write_locks):
         """
         :type phase1_source_dirs: list[str]
         :type smb_write_locks: list[str]
@@ -37,9 +33,9 @@ class Phase1WorkScheduler(object):
             # TODO: Optimize - get both mtime and ctime at the same time
             ctime = FsUtils.try_to_get_dir_created_time(phase1_source_dir)
             mtime = FsUtils.get_tree_mtime(phase1_source_dir)
-            existing_record = Phase1WorkScheduler._get_existing_record(phase1_source_dir, ctime)
+            existing_record = self._get_existing_record(phase1_source_dir, ctime)
             smb_write_lock_last_seen = \
-                Phase1WorkScheduler._get_new_smb_write_lock_value(
+                self._get_new_smb_write_lock_value(
                     phase1_source_dir,
                     mtime,
                     smb_write_locks,
@@ -56,45 +52,48 @@ class Phase1WorkScheduler(object):
             else:
                 Phase1Db().add_work_item(phase1_work_item)
 
-    @staticmethod
-    @LogEntryAndExit(logging.getLogger())
-    def _get_smb_write_locks(phase1_source_dirs):
+    def _get_smb_write_locks(self, phase1_source_dirs):
         smb_write_locks = \
             GetSmbLocksCommand(trim_to_paths=phase1_source_dirs).execute()
+        if smb_write_locks:
+            self._logger.debug("Located SMB Write Locks on\n{0}".format('\n'.join(smb_write_locks)))
+        else:
+            self._logger.debug("No SMB Write Locks detected")
         return smb_write_locks
 
-    @staticmethod
-    @LogEntryAndExit(logging.getLogger())
-    def _get_phase1_source_dirs():
+    def _get_phase1_source_dirs(self):
         phase1_source_dirs = \
             FsUtils.glob(Phase1WorkScheduler._phase1_glob_query)
+        if phase1_source_dirs:
+            self._logger.debug("Located Phase1 Source Dirs\n{0}".format('\n'.join(phase1_source_dirs)))
+        else:
+            self._logger.debug("No Phase1 Source Dirs found")
         return phase1_source_dirs
 
-    @staticmethod
-    @LogEntryAndExit(logging.getLogger())
-    def _get_existing_record(phase1_source_dir, ctime):
-        logging.debug("Attempting to retrieve record for {0} from db".format(phase1_source_dir))
+    def _get_existing_record(self, phase1_source_dir, ctime):
+        self._logger.debug("Attempting to retrieve record for {0} from db".format(phase1_source_dir))
         record_in_db = Phase1Db().get_work_item(phase1_source_dir, ctime)
         if record_in_db:
-            logging.debug("Successfully retrieved db record")
-            logging.debug("{0}".format(record_in_db))
+            self._logger.debug("Successfully retrieved db record")
+            self._logger.debug("{0}".format(record_in_db))
             return record_in_db
         else:
-            logging.debug("No db record found")
+            self._logger.debug("No db record found")
             return None
 
-    @staticmethod
-    @LogEntryAndExit(logging.getLogger())
-    def _get_new_smb_write_lock_value(phase1_source_dir, mtime, smb_write_locks, existing_record):
-
-        # This is the first time we see this dir so setting smb_write_lock to now
+    def _get_new_smb_write_lock_value(self, phase1_source_dir, mtime, smb_write_locks, existing_record):
         if not existing_record:
             smb_write_lock_last_seen = mtime
-        # dir has smb write lock so we need to reflect this in db
+            self._logger.debug("This is the first time we see {0},"
+                               " so setting smb_write_lock to its mtime:{1}".format(phase1_source_dir, mtime))
+
         elif phase1_source_dir in smb_write_locks:
             smb_write_lock_last_seen = datetime.datetime.now()
+            self._logger.debug("{0} has smb write lock, so setting it to now:{1}".format(
+                phase1_source_dir, smb_write_lock_last_seen))
         else:
-            # this is an existing record that is not locked, so will keep the prior value in db
             smb_write_lock_last_seen = existing_record.last_smb_write_lock
+            self._logger.debug("{0} is an existing record that is not locked, so will keep the prior value {1}".format(
+                phase1_source_dir, smb_write_lock_last_seen))
 
         return smb_write_lock_last_seen

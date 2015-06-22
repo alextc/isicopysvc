@@ -4,7 +4,6 @@ import os
 import time
 import logging
 import shutil
-
 from work.phase1workscheduler import Phase1WorkScheduler
 from work.phase1worker import Phase1Worker
 from sql.phase1db import Phase1Db
