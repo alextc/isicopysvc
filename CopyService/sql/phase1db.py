@@ -97,6 +97,30 @@ class Phase1Db:
 
             return result
 
+    @LogEntryAndExit(logging.getLogger())
+    def get_all_work_items(self):
+        result = []
+
+        with sqlite3.connect(self._data_file_path,
+                             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            cursor.execute('SELECT * FROM phase1_work_items')
+            qry_results = cursor.fetchall()
+
+            if not qry_results:
+                return result
+
+            for qry_result in qry_results:
+                result.append(
+                    Phase1WorkItem(
+                        source_dir=qry_result["directory"],
+                        tree_creation_time=qry_result["created"],
+                        tree_last_modified=qry_result["last_modified"],
+                        smb_write_lock_last_seen=qry_result["last_smb_write_lock"]))
+
+            return result
+
     def get_work_item(self, source_dir, ctime):
         """
         :type source_dir: str
