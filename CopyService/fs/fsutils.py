@@ -3,6 +3,7 @@ import glob
 import os
 import logging
 import datetime
+import shutil
 from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
 from aop.logstartandexit import LogEntryAndExit
@@ -109,3 +110,9 @@ class FsUtils(object):
                 set_acl_on_dir_command.execute()
                 if heart_beat_manager:
                     heart_beat_manager.write_heart_beat()
+
+    @staticmethod
+    def clear_dir(dir_to_clear):
+        for root, dirs, files in os.walk(dir_to_clear, topdown=False):
+            for directory in dirs:
+                shutil.rmtree(os.path.join(root, directory))

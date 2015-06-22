@@ -1,9 +1,8 @@
 __author__ = 'alextc'
-import logging
-import os
 import shutil
 from sql.phase1db import Phase1Db
 from model.phase1workitem import Phase1WorkItem
+from log.loggerfactory import LoggerFactory
 
 
 class Phase1Worker(object):
@@ -11,22 +10,10 @@ class Phase1Worker(object):
     _smb_write_lock_stillness_threshold_in_sec = 3
 
     def __init__(self):
-        self._logger = logging.getLogger('Phase1Worker')
-        self._logger.setLevel(logging.DEBUG)
-
-        # Clearing the log - comment out in production
-        if os.path.exists('/ifs/copy_svc/Phase1Worker.log'):
-            os.remove('/ifs/copy_svc/Phase1Worker.log')
-
-        file_handler = logging.FileHandler('/ifs/copy_svc/Phase1Worker.log')
-        file_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("[%(asctime)s %(process)s] %(message)s")
-        file_handler.setFormatter(formatter)
-        self._logger.addHandler(file_handler)
-        self._logger.debug("Phase1Worker initialized")
+        self._logger = LoggerFactory.create(Phase1Worker.__name__)
 
     def run(self):
-        still_work_items = self._get_still_work_times_from_db()
+        still_work_items = self._get_still_work_items_from_db()
         if len(still_work_items) == 0:
             self._logger.debug("No still items were detected exiting run")
             return
@@ -38,7 +25,7 @@ class Phase1Worker(object):
         self._move_still_items_to_staging(still_work_items)
         self._remove_processed_items_from_db(still_work_items)
 
-    def _get_still_work_times_from_db(self):
+    def _get_still_work_items_from_db(self):
         """
         :rtype: list[Phase1WorkItem]
         """
