@@ -60,7 +60,7 @@ class Phase1WorkItem(object):
         return True
 
     def sync_from_db(self, phase1_db):
-        state_in_db = phase1_db().get_work_item(self.phase1_source_dir, self.tree_creation_time)
+        state_in_db = phase1_db.get_work_item(self.phase1_source_dir, self.tree_creation_time)
         assert state_in_db, "Unable to get state from Phase1 Db"
         self.last_smb_write_lock = state_in_db.last_smb_write_lock
         self.tree_last_modified = state_in_db.tree_last_modified

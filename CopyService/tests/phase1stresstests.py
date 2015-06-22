@@ -6,6 +6,7 @@ from work.phase1worker import Phase1Worker
 from sql.phase1db import Phase1Db
 from testutils.workitemsfactory import WorkItemsFactory
 from testutils.cleaner import Cleaner
+from log.loggerfactory import LoggerFactory
 
 
 class Phase1StressTests(unittest.TestCase):
@@ -13,6 +14,7 @@ class Phase1StressTests(unittest.TestCase):
     _user_actions_during_test = []
 
     def setUp(self):
+        self._logger = LoggerFactory.create(Phase1StressTests.__name__)
         Cleaner().clean_phase1()
 
     def test_stress(self):
@@ -23,33 +25,43 @@ class Phase1StressTests(unittest.TestCase):
 
             if user_action == "noop":
                 continue
-            elif user_action == "smb_write_lock_file":
-                # smb_write_lock operation is only makes sense on an item already in Phase1Db
-                items_in_db = Phase1Db().get_all_work_items()
-
-                # Nothing in Db so nothing to lock exiting this case
-                if not items_in_db:
-                    continue
-
-                work_item_to_apply_smb_write_lock = random.choice(items_in_db)
-                phase1_source_dirs = phase1_work_scheduler._get_phase1_source_dirs()
-                # Faking smb_write_lock
-                phase1_work_scheduler._update_phase1_db(
-                    phase1_source_dirs,
-                    [work_item_to_apply_smb_write_lock.phase1_source_dir, ])
-
-                # Syncing user_action
-                index = Phase1StressTests._user_actions_during_test.index(work_item_to_apply_smb_write_lock)
-                Phase1StressTests._user_actions_during_test[index].sync_from_db(Phase1Db())
             elif user_action == "new_folder":
-                new_work_item = WorkItemsFactory.create_phase1_work_item()
-                Phase1StressTests._user_actions_during_test.append(new_work_item)
-                phase1_work_scheduler.run()
+                self._process_new_folder_user_action(phase1_work_scheduler)
+            elif user_action == "smb_write_lock_file":
+                self._process_smb_write_lock_user_action(phase1_work_scheduler)
             else:
                 raise ValueError("Unexpected user action {0}".format(user_action))
 
             phase1_worker.run()
             self._validate_state()
+
+    def _process_new_folder_user_action(self, phase1_work_scheduler):
+        new_work_item = WorkItemsFactory.create_phase1_work_item()
+        Phase1StressTests._user_actions_during_test.append(new_work_item)
+        phase1_work_scheduler.run()
+
+    def _process_smb_write_lock_user_action(self, phase1_work_scheduler):
+        # Getting a random item in Db
+        # smb_write_lock operation is only makes sense on an item already in Phase1Db
+        items_in_db = Phase1Db().get_all_work_items()
+
+        # Nothing in Db so nothing to lock, exiting this case
+        if not items_in_db:
+            return
+
+        work_item_to_apply_smb_write_lock = random.choice(items_in_db)
+        self._logger.debug("Faking smb write lock on:\n{0}".format(work_item_to_apply_smb_write_lock))
+
+        # Simulating Phase1 run
+        phase1_source_dirs = phase1_work_scheduler._get_phase1_source_dirs()
+        # Faking smb_write_lock by passing work_item_to_apply_smb_lock to _update_phase1_db
+        phase1_work_scheduler._update_phase1_db(
+            phase1_source_dirs,
+            [work_item_to_apply_smb_write_lock.phase1_source_dir, ])
+
+        # Syncing user_action. Need to do this so that validation works as expected
+        index = Phase1StressTests._user_actions_during_test.index(work_item_to_apply_smb_write_lock)
+        Phase1StressTests._user_actions_during_test[index].sync_from_db(Phase1Db())
 
     def _validate_state(self):
         for user_action in Phase1StressTests._user_actions_during_test:
