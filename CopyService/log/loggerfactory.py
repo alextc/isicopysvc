@@ -1,5 +1,6 @@
 __author__ = 'alextc'
 import logging
+import logging.handlers as handlers
 import os
 
 
@@ -21,7 +22,14 @@ class LoggerFactory(object):
 
         file_handler = logging.FileHandler(log_path)
         file_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("[%(asctime)s %(process)s] %(message)s")
-        file_handler.setFormatter(formatter)
+
+        file_formatter = logging.Formatter("[%(asctime)s %(process)s] %(message)s")
+        file_handler.setFormatter(file_formatter)
         logger.addHandler(file_handler)
+
+        syslog_handler = handlers.SysLogHandler(address=('192.168.11.50', 514))
+        syslog_formatter = logging.Formatter('%(name)s[%(process)d]: %(levelname)-8s %(message)s')
+        syslog_handler.setFormatter(syslog_formatter)
+        logger.addHandler(syslog_handler)
+
         return logger
