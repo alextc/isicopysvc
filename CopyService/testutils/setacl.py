@@ -5,9 +5,13 @@ from isiapi.setaclcommand import SetAclCommand
 
 class SetAcl(object):
 
-    # AD2 ISI_ADMINS = S-1-5-21-2576225250-2004976870-3728844968-1108
-    # AD2 ISI_READERS = S-1-5-21-2576225250-2004976870-3728844968-1106
-    # AD2 ISI_WRITERS = S-1-5-21-2576225250-2004976870-3728844968-1107
+    AD2_ISI_ADMINS =  "S-1-5-21-2576225250-2004976870-3728844968-1108"
+    AD2_ISI_READERS = "S-1-5-21-2576225250-2004976870-3728844968-1106"
+    AD2_ISI_WRITERS = "S-1-5-21-2576225250-2004976870-3728844968-1107"
+
+    AD1_ISI_READERS = "S-1-5-21-1415853412-1264766915-3061632431-1107"
+    AD1_ISI_WRITERS = "S-1-5-21-1415853412-1264766915-3061632431-1106"
+    AD1_ISI_ADMINS =  "S-1-5-21-1415853412-1264766915-3061632431-1108"
 
     # Removing "authoritative" : "acl" breaks the API - Investigate further
 
@@ -20,27 +24,25 @@ class SetAcl(object):
             "inherit_flags" : [ "object_inherit", "container_inherit" ],
             "trustee" :
             {
-                "id" : "SID:S-1-5-21-2576225250-2004976870-3728844968-1106"
+                "id" : "SID:S-1-5-21-1415853412-1264766915-3061632431-1107"
             }
         },
-
         {
             "accessrights" : [ "dir_gen_all" ],
             "accesstype" : "allow",
             "inherit_flags" : [ "object_inherit", "container_inherit" ],
             "trustee" :
             {
-                "id" : "SID:S-1-5-21-2576225250-2004976870-3728844968-1108"
+                "id" : "SID:S-1-5-21-1415853412-1264766915-3061632431-1108"
             }
         },
-
         {
             "accessrights" : [ "dir_gen_read", "dir_gen_write", "dir_gen_execute" ],
             "accesstype" : "allow",
             "inherit_flags" : [ "object_inherit", "container_inherit" ],
             "trustee" :
             {
-                "id" : "SID:S-1-5-21-2576225250-2004976870-3728844968-1107"
+                "id" : "SID:S-1-5-21-1415853412-1264766915-3061632431-1106"
             }
         }
         ],

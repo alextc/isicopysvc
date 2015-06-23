@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from phase1work.processpool import ProcessPool
 from phase2work.phase2workscheduler import Phase2WorkScheduler
 from sql.phase2db import Phase2Db

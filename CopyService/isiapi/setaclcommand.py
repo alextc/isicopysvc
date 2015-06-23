@@ -21,12 +21,10 @@ class SetAclCommand(NamespaceCommand):
             SetAclCommand._function_call_count += 1
             try:
                 raw_response = super(SetAclCommand, self).execute()
-                assert raw_response[0] == 200, "Set ACL API for dir {0} failed, response was {1}".format(
-                    self._path,
-                    raw_response[0])
-                self._logger.debug("Set ACL API for dir {0} completed with the status of {1}".format(
-                    self._path,
-                    raw_response[0]))
+                self._logger.debug("Set ACL API for dir {0} completed with the status of {1} and message body of {2}".
+                    format(self._path, raw_response[0], raw_response[1]))
+                assert raw_response[0] == 200, "Set ACL API for dir {0} failed,response was {1}, message body was {2}".\
+                    format(self._path, raw_response[0], raw_response[1])
                 return
             except RuntimeError as e:
                 self._logger.debug("{0}, while processing {1}".format(e, self._path))
