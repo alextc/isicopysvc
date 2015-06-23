@@ -1,8 +1,8 @@
 __author__ = 'alextc'
 import unittest
 import random
-from work.phase1workscheduler import Phase1WorkScheduler
-from work.phase1worker import Phase1Worker
+from phase1work.phase1workscheduler import Phase1WorkScheduler
+from phase1work.phase1worker import Phase1Worker
 from sql.phase1db import Phase1Db
 from testutils.workitemsfactory import WorkItemsFactory
 from testutils.cleaner import Cleaner

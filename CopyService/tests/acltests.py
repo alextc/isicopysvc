@@ -38,7 +38,7 @@ class AclTests(unittest.TestCase):
         get_acl_command = GetAclCommand(template_dir)
         acl = get_acl_command.execute()
         self.assertTrue(acl)
-        # this will throw an exception if it does not work
+        # this will throw an exception if it does not phase1work
         SetAclCommand(destination_dir, acl)
     '''
 

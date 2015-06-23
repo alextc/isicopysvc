@@ -33,12 +33,12 @@ class Phase2WorkScheduler(object):
     def _get_potential_work_item(self):
         potential_work_inputs = glob.glob(self._phase1_output_path)
         if not potential_work_inputs:
-            logging.debug("No new or stranded work: exiting")
+            logging.debug("No new or stranded phase1work: exiting")
             return
 
         random_dir = random.choice(potential_work_inputs)
         logging.debug("Randomly selected directory: {0}".format(random_dir))
-        last_modified = FsUtils.try_to_get_dir_last_modified_time(random_dir)
+        last_modified = FsUtils().try_to_get_dir_last_modified_time(random_dir)
         if not last_modified:
             logging.debug("Attempt to get last modified time stamp failed.")
             logging.debug("Assuming that the directory was already processed by other worker. Returning None")

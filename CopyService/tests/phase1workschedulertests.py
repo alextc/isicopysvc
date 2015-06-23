@@ -4,7 +4,7 @@ import random
 import os
 import time
 import logging
-from work.phase1workscheduler import Phase1WorkScheduler
+from phase1work.phase1workscheduler import Phase1WorkScheduler
 from model.phase1workitem import Phase1WorkItem
 from fs.fsutils import FsUtils
 from sql.phase1db import Phase1Db

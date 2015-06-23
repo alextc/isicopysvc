@@ -1,6 +1,6 @@
 __author__ = 'alextc'
-from work.phase1worker import Phase1Worker
-from work.phase1workscheduler import Phase1WorkScheduler
+from phase1work.phase1worker import Phase1Worker
+from phase1work.phase1workscheduler import Phase1WorkScheduler
 import logging
 
 

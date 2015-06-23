@@ -121,13 +121,12 @@ class Phase2Db:
             cursor.execute('SELECT * FROM phase2_work_items WHERE directory = (?)', (directory,))
             result = cursor.fetchone()
 
-        assert (len(result) == 0 or len(result) == 1),\
-                "Phase2 Db is corrupted, only one record should exist per dir_name"
-
         # no matching record found
         if not result:
             logging.debug("get_heart_beat did not return anything")
             return None
+
+        assert len(result) == 1, "Phase2 Db is corrupted, only one record should exist per dir_name"
 
         heart_beat = Phase2WorkItem(
             phase2_source_dir=result["directory"],

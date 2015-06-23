@@ -143,11 +143,10 @@ class Phase1Db:
             cursor.execute('SELECT * FROM phase1_work_items WHERE directory=? AND created=?', params)
             result = cursor.fetchall()
 
-            assert (len(result) == 0 or len(result) == 1), \
-                "Phase1 Db is corrupted, only one record should exist per dir_name, ctime combo"
-
             if not result:
                 return None
+
+            assert len(result) == 1, "Phase1 Db is corrupted, only one record should exist per dir_name, ctime combo"
 
             phase1_work_item = Phase1WorkItem(
                 source_dir=result[0]["directory"],

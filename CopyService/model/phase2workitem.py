@@ -20,7 +20,7 @@ class Phase2WorkItem(object):
         """
 
         # Removing this Assert - in a multi threaded scenario it is quite possible to this directory not to exist
-        # by the time this code executes - some other process already completed work and deleted it
+        # by the time this code executes - some other process already completed phase1work and deleted it
         # The situation should resolve itself when an attempt is made to claim this directory.
         # at that point the directory is claimed by somebody else.
         # However, what if the directory is already processed by that time and no longer in sql???

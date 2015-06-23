@@ -4,8 +4,9 @@ import random
 import os
 import shutil
 import time
+
 from sql.phase1db import Phase1Db
-from work.phase2workscheduler import Phase2WorkScheduler
+from phase2work.phase2workscheduler import Phase2WorkScheduler
 from model.phase2workitem import Phase2WorkItem
 from fs.fsutils import FsUtils
 

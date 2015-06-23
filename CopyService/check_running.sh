@@ -130,7 +130,7 @@ function start_process() {
     return 1
 }
 
-# Begin work here
+# Begin phase1work here
 
 rotate_log
 RUNNING=$(get_running)

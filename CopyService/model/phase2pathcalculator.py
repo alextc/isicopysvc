@@ -39,7 +39,7 @@ class Phase2PathCalculator(object):
 
         self._phase2_source_dir = source_dir
         # Removing this Assert - in a multi threaded scenario it is quite possible to this directory not to exist
-        # by the time this code executes - some other process already completed work and deleted it
+        # by the time this code executes - some other process already completed phase1work and deleted it
         # assert os.path.exists(phase2_source_dir), \
         #    "Unable to locate phase2_source_dir {0}".format(phase2_source_dir)
 

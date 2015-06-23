@@ -31,8 +31,8 @@ class Phase1WorkScheduler(object):
 
         for phase1_source_dir in phase1_source_dirs:
             # TODO: Optimize - get both mtime and ctime at the same time
-            ctime = FsUtils.try_to_get_dir_created_time(phase1_source_dir)
-            mtime = FsUtils.get_tree_mtime(phase1_source_dir)
+            ctime = FsUtils().try_to_get_dir_created_time(phase1_source_dir)
+            mtime = FsUtils().get_tree_mtime(phase1_source_dir)
             existing_record = self._get_existing_record(phase1_source_dir, ctime)
             smb_write_lock_last_seen = \
                 self._get_new_smb_write_lock_value(
@@ -63,7 +63,7 @@ class Phase1WorkScheduler(object):
 
     def _get_phase1_source_dirs(self):
         phase1_source_dirs = \
-            FsUtils.glob(Phase1WorkScheduler._phase1_glob_query)
+            FsUtils().glob(Phase1WorkScheduler._phase1_glob_query)
         if phase1_source_dirs:
             self._logger.debug("Located Phase1 Source Dirs\n{0}".format('\n'.join(phase1_source_dirs)))
         else:
