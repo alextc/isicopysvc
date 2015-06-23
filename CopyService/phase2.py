@@ -19,3 +19,4 @@ if __name__ == '__main__':
         if my_work_item:
             my_work_item.state = "ReAcl"
             phase2.worker.run(my_work_item, HeartBeatManager(phase2.heart_beat_db, my_work_item))
+            # TODO: Add my_work_item.validate()

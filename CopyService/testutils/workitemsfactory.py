@@ -21,6 +21,10 @@ class WorkItemsFactory(object):
                 os.path.join(WorkItemsFactory._root_phase1_path, str(phase1_source_dir_name))
             os.mkdir(phase1_source_dir_path)
             last_modified = FsUtils().try_to_get_dir_last_modified_time(phase1_source_dir_path)
+            for j in range(10):
+                file_name = os.path.join(phase1_source_dir_path, str(random.randint(10000, 900000)))
+                f = open(file_name, 'w+')
+                f.close()
 
             return Phase1WorkItem(
                 source_dir=phase1_source_dir_path,
