@@ -9,12 +9,12 @@ from cluster.heartbeatmanager import HeartBeatManager
 from sql.phase2db import Phase2Db
 
 
-class Phase2StressTests(unittest.TestCase):
+class Phase2StoryTests(unittest.TestCase):
     def setUp(self):
-        self._logger = LoggerFactory.create(Phase2StressTests.__name__)
+        self._logger = LoggerFactory.create(Phase2StoryTests.__name__)
         Cleaner().clean_phase2()
 
-    def test_stress(self):
+    def test_phase2_story(self):
         worker = Phase2Worker()
         work_scheduler = Phase2WorkScheduler()
         heart_beat_db = Phase2Db()

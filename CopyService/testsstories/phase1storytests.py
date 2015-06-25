@@ -9,15 +9,15 @@ from testutils.cleaner import Cleaner
 from log.loggerfactory import LoggerFactory
 
 
-class Phase1StressTests(unittest.TestCase):
+class Phase1StoryTests(unittest.TestCase):
 
     _user_actions_during_test = []
 
     def setUp(self):
-        self._logger = LoggerFactory.create(Phase1StressTests.__name__)
+        self._logger = LoggerFactory.create(Phase1StoryTests.__name__)
         Cleaner().clean_phase1()
 
-    def test_stress(self):
+    def test_phase1_story(self):
         phase1_work_scheduler = Phase1WorkScheduler()
         phase1_worker = Phase1Worker()
         for i in range(100):
@@ -37,7 +37,7 @@ class Phase1StressTests(unittest.TestCase):
 
     def _process_new_folder_user_action(self, phase1_work_scheduler):
         new_work_item = WorkItemsFactory.create_phase1_work_item()
-        Phase1StressTests._user_actions_during_test.append(new_work_item)
+        Phase1StoryTests._user_actions_during_test.append(new_work_item)
         phase1_work_scheduler.run()
 
     def _process_smb_write_lock_user_action(self, phase1_work_scheduler):
@@ -60,11 +60,11 @@ class Phase1StressTests(unittest.TestCase):
             [work_item_to_apply_smb_write_lock.phase1_source_dir, ])
 
         # Syncing user_action. Need to do this so that validation works as expected
-        index = Phase1StressTests._user_actions_during_test.index(work_item_to_apply_smb_write_lock)
-        Phase1StressTests._user_actions_during_test[index].sync_from_db(Phase1Db())
+        index = Phase1StoryTests._user_actions_during_test.index(work_item_to_apply_smb_write_lock)
+        Phase1StoryTests._user_actions_during_test[index].sync_from_db(Phase1Db())
 
     def _validate_state(self):
-        for user_action in Phase1StressTests._user_actions_during_test:
+        for user_action in Phase1StoryTests._user_actions_during_test:
             self.assertTrue(user_action.is_state_valid(
                 stillness_threshold_in_sec=Phase1Worker._smb_write_lock_stillness_threshold_in_sec,
                 phase1_db=Phase1Db()))
