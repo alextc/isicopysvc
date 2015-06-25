@@ -15,7 +15,7 @@ def receive_signal(signum):
 signal.signal(signal.SIGTERM, receive_signal)
 
 
-class AclTests(unittest.TestCase):
+class SetAclCommandTests(unittest.TestCase):
 
     '''
     def test_must_get_acl_for_directory(self):

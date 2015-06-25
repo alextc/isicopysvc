@@ -78,7 +78,7 @@ class Phase1WorkSchedulerTests(unittest.TestCase):
                 os.path.join(Phase1WorkSchedulerTests._root_path, str(phase1_source_dir_name))
             os.mkdir(phase1_source_dir_path)
             self.assertTrue(os.path.exists(phase1_source_dir_path))
-            last_modified = FsUtils.try_to_get_dir_last_modified_time(phase1_source_dir_path)
+            last_modified = FsUtils().try_to_get_dir_last_modified_time(phase1_source_dir_path)
             self.assertFalse(Phase1Db().get_work_item(
                 phase1_source_dir_path,
                 last_modified))

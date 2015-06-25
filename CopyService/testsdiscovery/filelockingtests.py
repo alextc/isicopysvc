@@ -28,7 +28,7 @@ class FileLockingTests(unittest.TestCase):
         with open("foo1", 'a+') as file_to_lock2:
             lock_file_ex(file_to_lock2)
 
-    # TODO: Redo this tests with Process instead of subprocess
+    # TODO: Redo this testsunits with Process instead of subprocess
     def test_must_get_lock_when_another_process_crashed_before_releasing(self):
         subprocess.call(
             ['python', '/ifs/copy_svc/code/CopyService/utils/lockfile.py', '/ifs/copy_svc/lock1.file', 'True'])
@@ -49,4 +49,3 @@ def lock_file_ex(file_handle):
                                        
 if __name__ == '__main__':
     unittest.main()
-

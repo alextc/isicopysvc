@@ -129,7 +129,7 @@ class Phase1Db:
         """
 
         # This assert is correct from the logic point of view, but breaks testing
-        # In tests I need to validate that the record was removed from Db
+        # In testsunits I need to validate that the record was removed from Db
         # assert \
         #    os.path.exists(source_dir),\
         #   "Phase1 Db was requested to search for a dir:{0} that does not exist on fs".format(source_dir)

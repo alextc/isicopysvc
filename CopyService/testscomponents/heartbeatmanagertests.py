@@ -87,7 +87,7 @@ class HeartBeatManagerTests(unittest.TestCase):
         phase2_source_dir_name = random.randint(10000, 900000)
         phase2_source_dir_path = os.path.join(HeartBeatManagerTests._root_path, str(phase2_source_dir_name))
         os.mkdir(phase2_source_dir_path)
-        last_modified = FsUtils.try_to_get_dir_last_modified_time(phase2_source_dir_path)
+        last_modified = FsUtils().try_to_get_dir_last_modified_time(phase2_source_dir_path)
         return Phase2WorkItem(
             phase2_source_dir=phase2_source_dir_path,
             phase2_source_dir_last_modified=last_modified,
