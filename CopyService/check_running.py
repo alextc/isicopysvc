@@ -14,7 +14,14 @@ LOG_FILENAME = None
 PATH_TO_LOG = None
 STALE_HEARTBEAT = None
 ROTATE_FREQUENCY = None
-HEARTBEAT_LOG = '/ifs/copy_svc/find_dirs_hb.dat'
+HEARTBEAT_LOG = '/ifs/copy_svc/Phase1Worker.log'
+
+# Sample heartbeats:
+#Phase1WorkScheduler.log
+#[2015-06-25 14:11:00,493 89156] No Phase1 Source Dirs found
+#
+#Phase1Worker.log
+#[2015-06-25 14:10:54,825 89156] No still items were detected exiting run
 
 
 def set_config():
@@ -45,7 +52,8 @@ def get_date():
     Get UTC date and time in a specific format
     :return: Comma separated date and time
     """
-    return datetime.datetime.utcnow().strftime("%Y, %m, %d, %H, %M, %S")
+    #return datetime.datetime.utcnow().strftime("%Y, %m, %d, %H, %M, %S")
+    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_last_heartbeat():

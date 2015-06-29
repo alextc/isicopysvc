@@ -27,7 +27,7 @@ class LoggerFactory(object):
         file_handler.setFormatter(file_formatter)
         logger.addHandler(file_handler)
 
-        syslog_handler = handlers.SysLogHandler(address=('192.168.11.50', 514))
+        syslog_handler = handlers.SysLogHandler(address=('172.16.0.2', 514))
         syslog_formatter = logging.Formatter('%(name)s[%(process)d]: %(levelname)-8s %(message)s')
         syslog_handler.setFormatter(syslog_formatter)
         logger.addHandler(syslog_handler)
