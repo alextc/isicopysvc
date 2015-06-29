@@ -46,6 +46,12 @@ def set_config():
     STALE_HEARTBEAT = conf.get('Check_running_one_node', 'Stale')
     ROTATE_FREQUENCY = conf.get('Check_running_one_node', 'Rotate')
 
+    print "LOOK_FOR: %s" % LOOK_FOR
+    print "PARENT_LOG_PATH: %s" % PARENT_LOG_PATH
+    print "LOG_FILENAME: %s" % LOG_FILENAME
+    print "PATH_TO_LOG: %s" % PATH_TO_LOG
+    print "STALE_HEARBEAT: %s" % STALE_HEARTBEAT
+    print "ROTATE_FREQUENCY: %s" % ROTATE_FREQUENCY
 
 def get_date():
     """
