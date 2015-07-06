@@ -47,7 +47,7 @@ Retry:  5
 Stale_HB:  5
 
 [Check_running_one_node]
-Process:  /ifs/copy_svc/v3.py
+Process:  /ifs/copy_svc/phase1.py
 LogPath:  /ifs
 LogFile:  cron_logs.txt
 Stale:  60
