@@ -46,17 +46,17 @@ Retry:  5
 # max_stale_hb_time_in_seconds
 Stale_HB:  5
 
-[Check_running_one_node]
-Process:  /ifs/copy_svc/phase1.py
+[Check_running]
+Stale:  60
+Running:  3
 LogPath:  /ifs
 LogFile:  cron_logs.txt
-Stale:  60
-Rotate:  1
+
+[Check_running_one_node]
+#Process:  isi_mcp
+Process:  /ifs/copy_svc/phase1.py
 
 [Check_running_each_node]
-Process:  /ifs/copy_svc/wip.py
-LogPath:  /ifs
-LogFile:  cron_logs_
-Stale:  60
-Rotate:  3
-Running:  5
+Process:  /ifs/copy_svc/test_phase2.py
+#Process:  /ifs/copy_svc/phase2.py
+
