@@ -7,7 +7,6 @@ from sql.phase1db import Phase1Db
 from log.loggerfactory import LoggerFactory
 
 
-
 class Phase1WorkScheduler(object):
 
     _phase1_glob_query = "/ifs/zones/*/copy_svc/to/*/*/"
@@ -33,9 +32,8 @@ class Phase1WorkScheduler(object):
 
         for phase1_source_dir in phase1_source_dirs:
             # TODO: Optimize - get both mtime and ctime at the same time
-            ctime = FsUtils().try_to_get_dir_created_time(phase1_source_dir)
             mtime = FsUtils().get_tree_mtime(phase1_source_dir)
-            existing_record = self._get_existing_record(phase1_source_dir, ctime)
+            existing_record = self._get_existing_record(phase1_source_dir)
             smb_write_lock_last_seen = \
                 self._get_new_smb_write_lock_value(
                     phase1_source_dir,
@@ -45,7 +43,6 @@ class Phase1WorkScheduler(object):
 
             phase1_work_item = Phase1WorkItem(
                         source_dir=phase1_source_dir,
-                        tree_creation_time=ctime,
                         tree_last_modified=mtime,
                         smb_write_lock_last_seen=smb_write_lock_last_seen)
 
@@ -77,11 +74,10 @@ class Phase1WorkScheduler(object):
         return phase1_source_dirs
 
     @staticmethod
-    def _get_existing_record(phase1_source_dir, ctime):
+    def _get_existing_record(phase1_source_dir):
         Phase1WorkScheduler._logger.debug(
-            "Attempting to retrieve record for dir:{0} with ctime of {1} from Phase1Db".format(
-                phase1_source_dir, ctime))
-        record_in_db = Phase1Db().get_work_item(phase1_source_dir, ctime)
+            "Attempting to retrieve record for dir:{0} from Phase1Db".format(phase1_source_dir))
+        record_in_db = Phase1Db().get_work_item(phase1_source_dir)
         if record_in_db:
             Phase1WorkScheduler._logger.debug("Successfully retrieved db record")
             Phase1WorkScheduler._logger.debug("{0}".format(record_in_db))

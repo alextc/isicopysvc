@@ -55,6 +55,4 @@ class Phase1Worker(object):
         for still_work_item in still_work_items:
             Phase1Db().remove_work_item(still_work_item)
             self._logger.debug(
-                "Removed processed item from Db {0}, with ctime of {1}".format(
-                    still_work_item.phase1_source_dir,
-                    still_work_item.tree_creation_time))
+                "Removed processed item from Db {0}".format(still_work_item.phase1_source_dir))

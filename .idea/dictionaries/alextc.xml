@@ -7,6 +7,7 @@
       <w>asctime</w>
       <w>ctime</w>
       <w>currentdir</w>
+      <w>fromtimestamp</w>
       <w>getsmblockscommand</w>
       <w>isiapi</w>
       <w>lockfile</w>

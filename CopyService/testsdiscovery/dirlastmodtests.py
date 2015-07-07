@@ -25,6 +25,7 @@ class DirLastModifiedTests(unittest.TestCase):
             mtime = FsUtils().try_to_get_dir_last_modified_time(dir_path)
 
     # This is strange and unfortunate, we can't rely on ctime as it changes in the same way as mtime
+    # This test is left in the failed state intentionally
     def test_ctime_on_dir_must_change_when_file_in_this_dir_is_modified(self):
         dir_name = random.randint(10000, 900000)
         dir_path = os.path.join(DirLastModifiedTests._root_path, str(dir_name))

@@ -26,10 +26,9 @@ class Phase1Db:
             if not result:
                 cursor.execute("CREATE TABLE phase1_work_items "
                                "(directory TEXT NOT NULL, "
-                               "created timestamp NOT NULL, "
                                "last_modified timestamp NOT NULL,"
                                "last_smb_write_lock timestamp NOT NULL, "
-                               "PRIMARY KEY (directory, created))")
+                               "PRIMARY KEY (directory))")
 
     def add_work_item(self, phase1_work_item):
         """
@@ -41,9 +40,8 @@ class Phase1Db:
             "Directory does not exist {0}".format(phase1_work_item.phase1_source_dir)
 
         sql_insert_query = 'INSERT INTO phase1_work_items ' \
-                           '(directory, created, last_modified, last_smb_write_lock ) VALUES (?,?,?,?)'
+                           '(directory, last_modified, last_smb_write_lock ) VALUES (?,?,?)'
         parameters = (phase1_work_item.phase1_source_dir,
-                      phase1_work_item.tree_creation_time,
                       phase1_work_item.tree_last_modified,
                       phase1_work_item.last_smb_write_lock)
 
@@ -59,7 +57,7 @@ class Phase1Db:
             "Directory does not exist {0}".format(phase1_work_item.phase1_source_dir)
 
         sql_insert_query = 'UPDATE phase1_work_items ' \
-                           'SET last_modified = ?, last_smb_write_lock= ? WHERE directory= ? AND created = ?'
+                           'SET last_modified = ?, last_smb_write_lock= ? WHERE directory= ?'
 
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
@@ -67,8 +65,7 @@ class Phase1Db:
             cursor.execute(sql_insert_query, (
                 phase1_work_item.tree_last_modified,
                 phase1_work_item.last_smb_write_lock,
-                phase1_work_item.phase1_source_dir,
-                phase1_work_item.tree_creation_time,))
+                phase1_work_item.phase1_source_dir))
 
     def get_still_work_items(self, stillness_threshold_in_sec):
         result = []
@@ -91,7 +88,6 @@ class Phase1Db:
                 result.append(
                     Phase1WorkItem(
                         source_dir=qry_result["directory"],
-                        tree_creation_time=qry_result["created"],
                         tree_last_modified=qry_result["last_modified"],
                         smb_write_lock_last_seen=qry_result["last_smb_write_lock"]))
 
@@ -114,13 +110,12 @@ class Phase1Db:
                 result.append(
                     Phase1WorkItem(
                         source_dir=qry_result["directory"],
-                        tree_creation_time=qry_result["created"],
                         tree_last_modified=qry_result["last_modified"],
                         smb_write_lock_last_seen=qry_result["last_smb_write_lock"]))
 
             return result
 
-    def get_work_item(self, source_dir, ctime, validate_pre_conditions=True):
+    def get_work_item(self, source_dir, validate_pre_conditions=True):
         """
         :type source_dir: str
         :type ctime: datetime.datetime
@@ -131,10 +126,10 @@ class Phase1Db:
             assert os.path.exists(source_dir), \
                 "Phase1 Db was requested to search for a dir:{0} that does not exist on fs".format(source_dir)
 
-        logging.debug("About to perform search for {0} : {1}".format(source_dir, ctime))
+        logging.debug("About to perform search for {0}".format(source_dir))
 
-        params = (source_dir, ctime)
-        query = 'SELECT * FROM phase1_work_items WHERE directory=? AND created=?'
+        params = (source_dir, )
+        query = 'SELECT * FROM phase1_work_items WHERE directory=?'
 
         result = SqliteFacade.execute_parameterized_select(self._data_file_path, query, params)
 
@@ -142,7 +137,6 @@ class Phase1Db:
             assert len(result) == 1, "Phase1 Db is corrupted, only one record should exist per dir_name, ctime combo"
             phase1_work_item = Phase1WorkItem(
                 source_dir=result[0]["directory"],
-                tree_creation_time=result[0]["created"],
                 tree_last_modified=result[0]["last_modified"],
                 smb_write_lock_last_seen=result[0]["last_smb_write_lock"])
             return phase1_work_item
@@ -153,8 +147,8 @@ class Phase1Db:
         """
         with sqlite3.connect(self._data_file_path) as connection:
             cursor = connection.cursor()
-            sql_delete_query = "DELETE FROM phase1_work_items WHERE directory = ? AND created=?"
-            params = (phase1_work_item.phase1_source_dir, phase1_work_item.tree_creation_time)
+            sql_delete_query = "DELETE FROM phase1_work_items WHERE directory = ?"
+            params = (phase1_work_item.phase1_source_dir,)
             cursor.execute(sql_delete_query, params)
 
     def clear_work_items(self):

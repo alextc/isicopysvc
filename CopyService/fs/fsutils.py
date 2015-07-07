@@ -7,7 +7,6 @@ from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
 from cluster.heartbeatmanager import HeartBeatManager
 from log.loggerfactory import LoggerFactory
-from common.datetimeutils import DateTimeUtils
 
 
 class FsUtils(object):
@@ -22,27 +21,11 @@ class FsUtils(object):
         self._logger.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result_to_abs_path))
         return result_to_abs_path
 
-    def try_to_get_dir_last_modified_time(self, dir_name):
-        """
-        :type dir_name: str
-        :rtype: datetime.datetime
-        """
-        try:
-            t = os.path.getmtime(dir_name)
-            result = datetime.datetime.fromtimestamp(t)
-            self._logger.debug("Returning {0}".format(result))
-            return result
-        except IOError as e:
-            self._logger.debug(e)
-            self._logger.debug("Attempt to get last modified timestamp failed for {0}".format(dir_name))
-            self._logger.debug("Assuming that the directory was already processed, returning False")
-            return False
-
+    """
+    # ctime does not equal creation time; it changes as files are added and removed from the dir
+    # Don't use to uniquely identify directories
     def try_to_get_dir_created_time(self, dir_name):
-        """
-        :type dir_name: str
-        :rtype: datetime.datetime
-        """
+
         try:
             t = os.path.getctime(dir_name)
             datetime_with_microseconds = datetime.datetime.fromtimestamp(t)
@@ -54,6 +37,7 @@ class FsUtils(object):
             self._logger.debug("Attempt to get created timestamp failed for {0}".format(dir_name))
             self._logger.debug("Assuming that the directory was already processed, returning False")
             return False
+    """
 
     def get_tree_mtime(self, tree_root):
         """
@@ -73,7 +57,19 @@ class FsUtils(object):
 
         self._logger.debug("Returning mtime {0}".format(latest_mtime))
         return latest_mtime
-        # return DateTimeUtils().strip_microseconds(latest_mtime)
+
+    def try_to_get_dir_last_modified_time(self, dir_name):
+        try:
+            t = os.path.getmtime(dir_name)
+            result = datetime.datetime.fromtimestamp(t)
+            self._logger.debug("try_to_get_dir_last_modified_time returning {0}".format(result))
+            return result
+        except IOError as e:
+            self._logger.debug(e)
+            self._logger.debug(
+                "Attempt to get last modified timestamp in try_to_get_dir_last_modified_time failed for {0}".format(
+                    dir_name))
+            return False
 
     def reacl_tree(self, target_dir, template_dir, heart_beat_manager=None):
         """

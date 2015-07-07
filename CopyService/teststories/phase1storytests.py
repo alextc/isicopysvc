@@ -9,7 +9,6 @@ from sql.phase1db import Phase1Db
 from testutils.workitemsfactory import WorkItemsFactory
 from testutils.cleaner import Cleaner
 from log.loggerfactory import LoggerFactory
-from fs.fsutils import FsUtils
 
 
 class Phase1StoryTests(unittest.TestCase):
@@ -66,7 +65,14 @@ class Phase1StoryTests(unittest.TestCase):
 
         # Syncing user_action. Need to do this so that validation works as expected
         index = Phase1StoryTests._user_actions_during_test.index(work_item_to_apply_smb_write_lock)
-        Phase1StoryTests._user_actions_during_test[index].sync_from_db(Phase1Db())
+        Phase1StoryTests.sync_work_item_from_db(Phase1StoryTests._user_actions_during_test[index])
+
+    @staticmethod
+    def sync_work_item_from_db(phase1_work_item):
+        state_in_db = Phase1Db().get_work_item(phase1_work_item.phase1_source_dir)
+        assert state_in_db, "Unable to get state from Phase1 Db"
+        phase1_work_item.last_smb_write_lock = state_in_db.last_smb_write_lock
+        phase1_work_item.tree_last_modified = state_in_db.tree_last_modified
 
     def _validate_state(self):
         for user_action in Phase1StoryTests._user_actions_during_test:
@@ -84,7 +90,7 @@ class Phase1StoryTests(unittest.TestCase):
                 "Phase1 source dir should not exist after stillness threshold"
             assert os.path.exists(phase1_work_item.phase2_staging_dir), \
                 "Phase2 Staging dir should exist after stillness threshold"
-            assert not Phase1Db().get_work_item(phase1_work_item.phase1_source_dir, phase1_work_item.tree_creation_time), \
+            assert not Phase1Db().get_work_item(phase1_work_item.phase1_source_dir,validate_pre_conditions=False), \
                 "Db record should not exist after stillness threshold"
         else:
             assert os.path.exists(phase1_work_item.phase1_source_dir), \
@@ -94,28 +100,13 @@ class Phase1StoryTests(unittest.TestCase):
                     phase1_work_item.phase1_source_dir,
                     datetime.datetime.now(),
                     phase1_work_item.last_smb_write_lock)
-            """
-            This assert is failing --- Can't rely on ctime it changes as the directory is modified
-            The assumption that I could use dir name + ctime as a primary key is incorrect
-            assert \
-                FsUtils().try_to_get_dir_created_time(phase1_work_item.phase1_source_dir) == \
-                phase1_work_item.tree_creation_time, \
-                    "Phase1 source dir {0}\n " \
-                    "ctime in phase1_work_item {1}, " \
-                    "but actual ctime from fs is {2}\n" \
-                    "SUT:\n{3}".format(
-                        phase1_work_item.phase1_source_dir,
-                        phase1_work_item.tree_creation_time,
-                        FsUtils().try_to_get_dir_created_time(phase1_work_item.phase1_source_dir),
-                        phase1_work_item)
-            """
 
             assert not os.path.exists(phase1_work_item.phase2_staging_dir), \
                 "Phase2 Staging dir should not exist after stillness threshold"
 
-            assert Phase1Db().get_work_item(phase1_work_item.phase1_source_dir, phase1_work_item.tree_creation_time), \
-                "Db record should have existed for dir:{0} with mtime of {1} before stillness threshold".format(
-                    phase1_work_item.phase1_source_dir, phase1_work_item.tree_creation_time)
+            assert Phase1Db().get_work_item(phase1_work_item.phase1_source_dir), \
+                "Db record should have existed for dir:{0} before stillness threshold".format(
+                    phase1_work_item.phase1_source_dir)
 
         return True
 
