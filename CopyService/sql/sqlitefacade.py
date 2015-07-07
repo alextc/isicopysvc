@@ -27,6 +27,20 @@ class SqliteFacade(object):
             raise
 
     @staticmethod
+    def execute_select(db_path, select_statement):
+        SqliteFacade._log_sql_command(select_statement, None, db_path)
+
+        try:
+            with sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
+                connection.row_factory = sqlite3.Row
+                cursor = connection.cursor()
+                cursor.execute(select_statement)
+                return cursor.fetchall()
+        except sqlite3.Error as e:
+            SqliteFacade._logger.debug(e.message)
+            raise
+
+    @staticmethod
     def execute_parameterized_command(db_path, command_statement, parameters):
         SqliteFacade._log_sql_command(command_statement, parameters, db_path)
 

@@ -13,7 +13,7 @@ class Phase1Worker(object):
 
     def run(self):
         still_work_items = self._get_still_work_items_from_db()
-        if len(still_work_items) == 0:
+        if not still_work_items:
             self._logger.debug("No still items were detected exiting run")
             return
         else:
@@ -31,7 +31,7 @@ class Phase1Worker(object):
         still_dirs = \
             Phase1Db().get_still_work_items(Phase1Worker._smb_write_lock_stillness_threshold_in_sec)
 
-        if len(still_dirs) == 0:
+        if not still_dirs:
             self._logger.debug("No still items were detected in _get_still_work_times_from_db")
 
         return still_dirs
