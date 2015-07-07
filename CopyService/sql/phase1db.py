@@ -5,15 +5,17 @@ import datetime
 import logging
 from datetime import timedelta
 from model.phase1workitem import Phase1WorkItem
-from aop.logstartandexit import LogEntryAndExit
+from log.loggerfactory import LoggerFactory
+from sqlitefacade import SqliteFacade
 
 
 class Phase1Db:
     _data_file_path = "/ifs/copy_svc/phase1.db"
+    _logger = LoggerFactory.create('Phase1Db')
 
     def __init__(self):
         if not os.path.exists(os.path.dirname(Phase1Db._data_file_path)):
-            raise ValueError("Directory does not exist '{}'".format(os.path.dirname(Phase1Db._data_file_path)))
+            raise ValueError("Directory does not exist '{0}'".format(os.path.dirname(Phase1Db._data_file_path)))
 
         self._data_file_path = Phase1Db._data_file_path
         with sqlite3.connect(self._data_file_path,
@@ -40,14 +42,12 @@ class Phase1Db:
 
         sql_insert_query = 'INSERT INTO phase1_work_items ' \
                            '(directory, created, last_modified, last_smb_write_lock ) VALUES (?,?,?,?)'
-        with sqlite3.connect(self._data_file_path,
-                             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
-            cursor = connection.cursor()
-            cursor.execute(sql_insert_query, (
-                phase1_work_item.phase1_source_dir,
-                phase1_work_item.tree_creation_time,
-                phase1_work_item.tree_last_modified,
-                phase1_work_item.last_smb_write_lock))
+        parameters = (phase1_work_item.phase1_source_dir,
+                      phase1_work_item.tree_creation_time,
+                      phase1_work_item.tree_last_modified,
+                      phase1_work_item.last_smb_write_lock)
+
+        SqliteFacade.execute_parameterized_command(self._data_file_path, sql_insert_query, parameters)
 
     def update_work_item(self, phase1_work_item):
         """
@@ -60,6 +60,7 @@ class Phase1Db:
 
         sql_insert_query = 'UPDATE phase1_work_items ' \
                            'SET last_modified = ?, last_smb_write_lock= ? WHERE directory= ? AND created = ?'
+
         with sqlite3.connect(self._data_file_path,
                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
             cursor = connection.cursor()
@@ -69,7 +70,6 @@ class Phase1Db:
                 phase1_work_item.phase1_source_dir,
                 phase1_work_item.tree_creation_time,))
 
-    @LogEntryAndExit(logging.getLogger())
     def get_still_work_items(self, stillness_threshold_in_sec):
         result = []
 
@@ -97,7 +97,6 @@ class Phase1Db:
 
             return result
 
-    @LogEntryAndExit(logging.getLogger())
     def get_all_work_items(self):
         result = []
 
@@ -121,39 +120,31 @@ class Phase1Db:
 
             return result
 
-    def get_work_item(self, source_dir, ctime):
+    def get_work_item(self, source_dir, ctime, validate_pre_conditions=True):
         """
         :type source_dir: str
         :type ctime: datetime.datetime
         :rtype: Phase1WorkItem
         """
 
-        # This assert is correct from the logic point of view, but breaks testing
-        # In testsunits I need to validate that the record was removed from Db
-        # assert \
-        #    os.path.exists(source_dir),\
-        #   "Phase1 Db was requested to search for a dir:{0} that does not exist on fs".format(source_dir)
+        if validate_pre_conditions:
+            assert os.path.exists(source_dir), \
+                "Phase1 Db was requested to search for a dir:{0} that does not exist on fs".format(source_dir)
 
         logging.debug("About to perform search for {0} : {1}".format(source_dir, ctime))
-        with sqlite3.connect(self._data_file_path,
-                             detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-            params = (source_dir, ctime)
-            cursor.execute('SELECT * FROM phase1_work_items WHERE directory=? AND created=?', params)
-            result = cursor.fetchall()
 
-            if not result:
-                return None
+        params = (source_dir, ctime)
+        query = 'SELECT * FROM phase1_work_items WHERE directory=? AND created=?'
 
+        result = SqliteFacade.execute_parameterized_select(self._data_file_path, query, params)
+
+        if result:
             assert len(result) == 1, "Phase1 Db is corrupted, only one record should exist per dir_name, ctime combo"
-
             phase1_work_item = Phase1WorkItem(
                 source_dir=result[0]["directory"],
                 tree_creation_time=result[0]["created"],
                 tree_last_modified=result[0]["last_modified"],
                 smb_write_lock_last_seen=result[0]["last_smb_write_lock"])
-
             return phase1_work_item
 
     def remove_work_item(self, phase1_work_item):

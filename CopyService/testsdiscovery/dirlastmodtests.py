@@ -24,6 +24,21 @@ class DirLastModifiedTests(unittest.TestCase):
             self.assertTrue(mtime < FsUtils().try_to_get_dir_last_modified_time(dir_path))
             mtime = FsUtils().try_to_get_dir_last_modified_time(dir_path)
 
+    # This is strange and unfortunate, we can't rely on ctime as it changes in the same way as mtime
+    def test_ctime_on_dir_must_change_when_file_in_this_dir_is_modified(self):
+        dir_name = random.randint(10000, 900000)
+        dir_path = os.path.join(DirLastModifiedTests._root_path, str(dir_name))
+        os.mkdir(dir_path)
+        ctime = FsUtils().try_to_get_dir_created_time(dir_path)
+        print ctime
+        for j in range(3):
+            file_name = os.path.join(dir_path, str(random.randint(10000, 900000)))
+            f = open(file_name, 'w+')
+            f.close()
+            time.sleep(1)
+            print FsUtils().try_to_get_dir_created_time(dir_path)
+            self.assertTrue(ctime == FsUtils().try_to_get_dir_created_time(dir_path))
+
     def test_mtime_on_dir_must_change_after_file_in_this_dir_is_open_for_write(self):
         dir_name = random.randint(10000, 900000)
         dir_path = os.path.join(DirLastModifiedTests._root_path, str(dir_name))

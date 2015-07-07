@@ -7,6 +7,7 @@ from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
 from cluster.heartbeatmanager import HeartBeatManager
 from log.loggerfactory import LoggerFactory
+from common.datetimeutils import DateTimeUtils
 
 
 class FsUtils(object):
@@ -44,7 +45,10 @@ class FsUtils(object):
         """
         try:
             t = os.path.getctime(dir_name)
-            return datetime.datetime.fromtimestamp(t)
+            datetime_with_microseconds = datetime.datetime.fromtimestamp(t)
+            return datetime_with_microseconds
+            # return DateTimeUtils().strip_microseconds(datetime_with_microseconds)
+
         except IOError as e:
             self._logger.debug(e)
             self._logger.debug("Attempt to get created timestamp failed for {0}".format(dir_name))
@@ -69,6 +73,7 @@ class FsUtils(object):
 
         self._logger.debug("Returning mtime {0}".format(latest_mtime))
         return latest_mtime
+        # return DateTimeUtils().strip_microseconds(latest_mtime)
 
     def reacl_tree(self, target_dir, template_dir, heart_beat_manager=None):
         """

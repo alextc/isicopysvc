@@ -17,6 +17,8 @@ class Phase1WorkItem(object):
         assert os.path.exists(source_dir), \
               "Unable to locate phase1_source_dir {0}".format(source_dir)
 
+        assert tree_creation_time <= tree_last_modified, "ctime must be less or equal than mtime"
+
         self.phase1_source_dir = os.path.abspath(source_dir)
         self.tree_creation_time = tree_creation_time
         self.tree_last_modified = tree_last_modified
@@ -30,34 +32,6 @@ class Phase1WorkItem(object):
 
     def get_stillness_period(self):
         return DateTimeUtils.get_total_seconds_for_timedelta(datetime.datetime.now() - self.last_smb_write_lock)
-
-    def is_state_valid(self, stillness_threshold_in_sec, phase1_db):
-
-        if abs(self.get_stillness_period() - stillness_threshold_in_sec) <= 1:
-            # This is undefined period values are too close to each other, assuming True
-            return True
-
-        if self.get_stillness_period() > stillness_threshold_in_sec:
-            assert not os.path.exists(self.phase1_source_dir), \
-                "Phase1 source dir should not exist after stillness threshold"
-            assert os.path.exists(self.phase2_staging_dir), \
-                "Phase2 Staging dir should exist after stillness threshold"
-            assert not phase1_db.get_work_item(self.phase1_source_dir, self.tree_creation_time), \
-                "Db record should not exist after stillness threshold"
-        else:
-            assert os.path.exists(self.phase1_source_dir), \
-                "Phase1 source dir {0}\n should exist before stillness threshold expires.\n" \
-                "Time of check {1}\n" \
-                "smb_lock_last_seen {2}".format(
-                    self.phase1_source_dir,
-                    datetime.datetime.now(),
-                    self.last_smb_write_lock)
-            assert not os.path.exists(self.phase2_staging_dir), \
-                "Phase2 Staging dir should not exist after stillness threshold"
-            assert phase1_db.get_work_item(self.phase1_source_dir, self.tree_creation_time), \
-                "Db record should exist before stillness threshold"
-
-        return True
 
     def sync_from_db(self, phase1_db):
         state_in_db = phase1_db.get_work_item(self.phase1_source_dir, self.tree_creation_time)
@@ -76,9 +50,9 @@ class Phase1WorkItem(object):
         result = "Phase1 Source:{0}\n".format(self.phase1_source_dir) + \
                  "Phase2 Staging:{0}\n".format(self.phase2_staging_dir) + \
                  "Tree Created:{0}\n".format(
-                     self.tree_creation_time.strftime("%Y-%m-%d %H:%M:%S")) + \
+                     self.tree_creation_time.strftime("%Y-%m-%d %H:%M:%S:%f")) + \
                  "Tree Last Modified:{0}\n".format(
-                     self.tree_last_modified.strftime("%Y-%m-%d %H:%M:%S")) + \
+                     self.tree_last_modified.strftime("%Y-%m-%d %H:%M:%S:%f")) + \
                  "Last SMB Write Lock:{0}\n".format(
-                     self.last_smb_write_lock.strftime("%Y-%m-%d %H:%M:%S"))
+                     self.last_smb_write_lock.strftime("%Y-%m-%d %H:%M:%S:%f"))
         return result

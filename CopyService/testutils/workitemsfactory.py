@@ -20,16 +20,18 @@ class WorkItemsFactory(object):
             phase1_source_dir_path = \
                 os.path.join(WorkItemsFactory._root_phase1_path, str(phase1_source_dir_name))
             os.mkdir(phase1_source_dir_path)
-            last_modified = FsUtils().try_to_get_dir_last_modified_time(phase1_source_dir_path)
+            ctime = FsUtils().try_to_get_dir_created_time(phase1_source_dir_path)
             for j in range(10):
                 file_name = os.path.join(phase1_source_dir_path, str(random.randint(10000, 900000)))
                 f = open(file_name, 'w+')
                 f.close()
 
+            mtime = FsUtils().get_tree_mtime(phase1_source_dir_path)
+
             return Phase1WorkItem(
                 source_dir=phase1_source_dir_path,
-                tree_creation_time=last_modified,
-                tree_last_modified=last_modified)
+                tree_creation_time=ctime,
+                tree_last_modified=mtime)
 
     @staticmethod
     def create_phase2_work_item():
