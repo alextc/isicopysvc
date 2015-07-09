@@ -10,6 +10,7 @@
       <w>fromtimestamp</w>
       <w>getsmblockscommand</w>
       <w>isiapi</w>
+      <w>levelname</w>
       <w>lockfile</w>
       <w>mtime</w>
       <w>noop</w>
