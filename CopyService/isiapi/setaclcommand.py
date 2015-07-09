@@ -8,7 +8,7 @@ class SetAclCommand(NamespaceCommand):
     _function_call_count = 0
     _retry_max_count = 10
     _retry_back_off_in_sec = 1
-    _logger = LoggerFactory.create('SetAclCommand')
+    _logger = LoggerFactory().create('SetAclCommand')
 
     def __init__(self, path, acl):
 

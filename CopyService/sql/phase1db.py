@@ -10,7 +10,7 @@ from sqlitefacade import SqliteFacade
 
 class Phase1Db:
     _data_file_path = "/ifs/copy_svc/phase1.db"
-    _logger = LoggerFactory.create('Phase1Db')
+    _logger = LoggerFactory().create('Phase1Db')
 
     def __init__(self):
         if not os.path.exists(os.path.dirname(Phase1Db._data_file_path)):

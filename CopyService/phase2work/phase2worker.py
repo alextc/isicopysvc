@@ -9,8 +9,10 @@ from log.loggerfactory import LoggerFactory
 
 class Phase2Worker(object):
 
+    _logger = LoggerFactory().create("Phase2Worker")
+
     def __init__(self):
-        self._logger = LoggerFactory.create(Phase2Worker.__name__)
+        pass
 
     def run(self, work_item, heart_beat_manager):
         """
@@ -21,17 +23,17 @@ class Phase2Worker(object):
         self._logger.debug("Received phase1work item to process:\n{0}".format(work_item))
 
         if work_item.state == "ReAcl":
-            self._logger.debug("Received work_item with with state==ReAcl\n{0}".format(work_item))
+            Phase2Worker._logger.debug("Received work_item with with state==ReAcl\n{0}".format(work_item))
             FsUtils().reacl_tree(
                 work_item.phase2_source_dir,
                 work_item.acl_template_dir,
                 heart_beat_manager)
-            self._logger.debug("Setting state to Move")
+            Phase2Worker._logger.debug("Setting state to Move")
             work_item.state = "Move"
             heart_beat_manager.write_heart_beat(force=True)
 
         if work_item.state == "Move":
-            self._logger.debug(
+            Phase2Worker._logger.debug(
                 "About to move {0} to {1}".format(work_item.phase2_source_dir, work_item.target_dir))
             shutil.move(work_item.phase2_source_dir, work_item.target_dir)
             logging.debug("Setting state to Cleanup")

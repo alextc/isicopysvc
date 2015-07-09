@@ -3,29 +3,25 @@ import logging
 import logging.handlers as handlers
 import os
 import socket
-import ConfigParser
+from bases.configurableobject import ConfigurableObject
 
 
-class LoggerFactory(object):
+class LoggerFactory(ConfigurableObject):
 
     _log_base_path = "/ifs/copy_svc/"
-    _config = ConfigParser.RawConfigParser()
-    _config.read('config')
 
-    @staticmethod
-    def create(log_name):
+    def create(self, log_name):
         logger = logging.getLogger(log_name)
-        logger.setLevel(LoggerFactory._get_logging_level())
+        logger.setLevel(self._get_logging_level())
         logger.addHandler(LoggerFactory._create_file_handler(log_name))
         logger.addHandler(
             LoggerFactory._create_sys_log_handler(
-                LoggerFactory._get_syslog_server(),
-                LoggerFactory._get_syslog_server_port()))
+                self._get_syslog_server(),
+                self._get_syslog_server_port()))
         return logger
 
-    @staticmethod
-    def _get_logging_level():
-        log_level = LoggerFactory._config.get('Logging', 'Level')
+    def _get_logging_level(self):
+        log_level = self.__class__._config.get('Logging', 'Level')
         assert log_level, "Failed to read log_level from config"
 
         if log_level == 'CRITICAL':
@@ -41,15 +37,13 @@ class LoggerFactory(object):
         else:
             raise ValueError("Unexpected Log Level: {0}".format(log_level))
 
-    @staticmethod
-    def _get_syslog_server():
-        syslog_server = LoggerFactory._config.get('Logging', 'SyslogServer')
+    def _get_syslog_server(self):
+        syslog_server = self.__class__._config.get('Logging', 'SyslogServer')
         # TODO: do regex to validate that this value is a hostname or IP
         return syslog_server
 
-    @staticmethod
-    def _get_syslog_server_port():
-        syslog_server_port = LoggerFactory._config.getint('Logging', 'SyslogPort')
+    def _get_syslog_server_port(self):
+        syslog_server_port = self.__class__._config.getint('Logging', 'SyslogPort')
         return syslog_server_port
 
     @staticmethod

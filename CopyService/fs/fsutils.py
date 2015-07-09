@@ -11,14 +11,17 @@ from log.loggerfactory import LoggerFactory
 
 class FsUtils(object):
 
-    def __init__(self):
-        self._logger = LoggerFactory.create(FsUtils.__name__)
+    _logger = LoggerFactory().create("FsUtils")
 
-    def glob(self, root_path):
-        self._logger.debug("\n\tPARAMETER root_path\n\t\t%s", root_path)
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def glob(root_path):
+        FsUtils._logger.debug("\n\tPARAMETER root_path\n\t\t%s", root_path)
         result = glob.glob(root_path)
         result_to_abs_path = [os.path.abspath(d) for d in result]
-        self._logger.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result_to_abs_path))
+        FsUtils._logger.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result_to_abs_path))
         return result_to_abs_path
 
     """
@@ -46,44 +49,46 @@ class FsUtils(object):
         """
         assert os.path.exists(tree_root), "tree_root:{0}, does not exist".format(tree_root)
 
-        self._logger.debug("tree_root:{0}".format(tree_root))
+        FsUtils._logger.debug("tree_root:{0}".format(tree_root))
         latest_mtime = self.try_to_get_dir_last_modified_time(tree_root)
-        self._logger.debug("Setting latest_mtime to {0}".format(latest_mtime))
+        FsUtils._logger.debug("Setting latest_mtime to {0}".format(latest_mtime))
         for root, dirs, files in os.walk(tree_root, topdown=False):
             for name in dirs:
                 mtime = self.try_to_get_dir_last_modified_time(os.path.join(root, name))
                 if latest_mtime < mtime:
                     latest_mtime = mtime
 
-        self._logger.debug("Returning mtime {0}".format(latest_mtime))
+        FsUtils._logger.debug("Returning mtime {0}".format(latest_mtime))
         return latest_mtime
 
-    def try_to_get_dir_last_modified_time(self, dir_name):
+    @staticmethod
+    def try_to_get_dir_last_modified_time(dir_name):
         try:
             t = os.path.getmtime(dir_name)
             result = datetime.datetime.fromtimestamp(t)
-            self._logger.debug("try_to_get_dir_last_modified_time returning {0}".format(result))
+            FsUtils._logger.debug("try_to_get_dir_last_modified_time returning {0}".format(result))
             return result
         except IOError as e:
-            self._logger.debug(e)
-            self._logger.debug(
+            FsUtils._logger.debug(e)
+            FsUtils._logger.debug(
                 "Attempt to get last modified timestamp in try_to_get_dir_last_modified_time failed for {0}".format(
                     dir_name))
             return False
 
-    def reacl_tree(self, target_dir, template_dir, heart_beat_manager=None):
+    @staticmethod
+    def reacl_tree(target_dir, template_dir, heart_beat_manager=None):
         """
         :param target_dir:
         :param template_dir:
         :type heart_beat_manager: HeartBeatManager
         :return:
         """
-        self._logger.debug("Template:{0}".format(template_dir))
-        self._logger.debug("Target:{0}".format(target_dir))
+        FsUtils._logger.debug("Template:{0}".format(template_dir))
+        FsUtils._logger.debug("Target:{0}".format(target_dir))
 
         get_acl_from_template_command = GetAclCommand(template_dir)
         acl_to_apply = get_acl_from_template_command.execute()
-        self._logger.debug("acl_to_apply:\n{0}".format(acl_to_apply))
+        FsUtils._logger.debug("acl_to_apply:\n{0}".format(acl_to_apply))
 
         set_acl_on_root_command = SetAclCommand(target_dir, acl_to_apply)
         set_acl_on_root_command.execute()

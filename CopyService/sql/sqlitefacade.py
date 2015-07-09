@@ -7,7 +7,7 @@ from common.datetimeutils import DateTimeUtils
 
 class SqliteFacade(object):
 
-    _logger = LoggerFactory.create('SqliteFacade')
+    _logger = LoggerFactory().create('SqliteFacade')
 
     def __init__(self):
         pass

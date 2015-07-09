@@ -16,7 +16,7 @@ class Phase1StoryTests(unittest.TestCase):
     _user_actions_during_test = []
 
     def setUp(self):
-        self._logger = LoggerFactory.create(Phase1StoryTests.__name__)
+        self._logger = LoggerFactory().create(Phase1StoryTests.__name__)
         Cleaner().clean_phase1()
 
     def test_phase1_story(self):

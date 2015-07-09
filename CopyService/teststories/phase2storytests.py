@@ -11,7 +11,7 @@ from sql.phase2db import Phase2Db
 
 class Phase2StoryTests(unittest.TestCase):
     def setUp(self):
-        self._logger = LoggerFactory.create(Phase2StoryTests.__name__)
+        self._logger = LoggerFactory().create(Phase2StoryTests.__name__)
         Cleaner().clean_phase2()
 
     def test_phase2_story(self):
