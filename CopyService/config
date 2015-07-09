@@ -4,6 +4,9 @@ Level:  DEBUG
 #Level:  WARNING
 #Level:  ERROR
 #Level:  CRITICAL
+SyslogServer: 192.168.11.50
+SyslogPort: 514
+
 
 [Paths]
 # Application's container for config, scripts, working files
