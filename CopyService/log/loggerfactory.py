@@ -2,6 +2,7 @@ __author__ = 'alextc'
 import logging
 import logging.handlers as handlers
 import os
+import socket
 
 
 class LoggerFactory(object):
@@ -10,17 +11,11 @@ class LoggerFactory(object):
 
     @staticmethod
     def create(log_name):
-        log_name += '.log'
-        log_path = os.path.join(LoggerFactory._log_base_path, log_name)
-        # Clearing the log - comment out in production
-        if os.path.exists(log_path):
-            os.remove(log_path)
-
         logger = logging.getLogger(log_name)
         # Do I need this - DEBUG is being set on file handler below
         logger.setLevel(logging.DEBUG)
 
-        file_handler = logging.FileHandler(log_path)
+        file_handler = logging.FileHandler(LoggerFactory._generate_log_file_path(log_name))
         file_handler.setLevel(logging.DEBUG)
 
         file_formatter = logging.Formatter("[%(asctime)s %(process)s] %(message)s")
@@ -33,3 +28,14 @@ class LoggerFactory(object):
         logger.addHandler(syslog_handler)
 
         return logger
+
+    @staticmethod
+    def _generate_log_file_path(log_name):
+        log_file_name = "{0}_{1}.{2}".format(socket.gethostname(), log_name, "log")
+        log_path = os.path.join(LoggerFactory._log_base_path, log_file_name)
+
+        # Clearing the log - comment out in production
+        if os.path.exists(log_path):
+            os.remove(log_path)
+
+        return log_path
