@@ -1,6 +1,6 @@
 __author__ = 'alextc'
-import random
 import os
+import uuid
 from model.phase1workitem import Phase1WorkItem
 from model.phase2workitem import Phase2WorkItem
 from fs.fsutils import FsUtils
@@ -16,13 +16,15 @@ class WorkItemsFactory(object):
             """
             :rtype: Phase1WorkItem
             """
-            phase1_source_dir_name = random.randint(10000, 900000)
+            phase1_source_dir_name = WorkItemsFactory.crete_unique_name()
             phase1_source_dir_path = \
                 os.path.join(WorkItemsFactory._root_phase1_path, str(phase1_source_dir_name))
+            assert not os.path.exists(phase1_source_dir_path), "Failed to generate unique directory name"
             os.mkdir(phase1_source_dir_path)
 
             for j in range(10):
-                file_name = os.path.join(phase1_source_dir_path, str(random.randint(10000, 900000)))
+                file_name = os.path.join(phase1_source_dir_path, str(WorkItemsFactory.crete_unique_name()))
+                assert not os.path.exists(file_name), "Failed to generate unique file name"
                 f = open(file_name, 'w+')
                 f.close()
 
@@ -36,15 +38,21 @@ class WorkItemsFactory(object):
             """
             :rtype: Phase1WorkItem
             """
-            phase2_source_dir_name = random.randint(10000, 900000)
+            phase2_source_dir_name = WorkItemsFactory.crete_unique_name()
             phase2_source_dir_path = \
                 os.path.join(WorkItemsFactory._root_phase2_path, str(phase2_source_dir_name))
+            assert not os.path.exists(phase2_source_dir_path), "Failed to generate unique directory name"
             os.mkdir(phase2_source_dir_path)
             for j in range(10):
-                file_name = os.path.join(phase2_source_dir_path, str(random.randint(10000, 900000)))
+                file_name = os.path.join(phase2_source_dir_path, str(WorkItemsFactory.crete_unique_name()))
+                assert not os.path.exists(file_name), "Failed to generate unique file name"
                 f = open(file_name, 'w+')
                 f.close()
             last_modified = FsUtils().get_tree_mtime(phase2_source_dir_path)
 
             return Phase2WorkItem(phase2_source_dir=phase2_source_dir_path,
                                   phase2_source_dir_last_modified=last_modified)
+
+    @staticmethod
+    def crete_unique_name():
+        return str(uuid.uuid4())
