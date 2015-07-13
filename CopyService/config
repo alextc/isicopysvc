@@ -6,6 +6,7 @@ Level:  DEBUG
 #Level:  CRITICAL
 SyslogServer: 192.168.11.50
 SyslogPort: 514
+LogBasePath: /ifs/copy_svc/
 
 
 [Paths]

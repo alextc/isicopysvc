@@ -8,12 +8,10 @@ from bases.configurableobject import ConfigurableObject
 
 class LoggerFactory(ConfigurableObject):
 
-    _log_base_path = "/ifs/copy_svc/"
-
     def create(self, log_name):
         logger = logging.getLogger(log_name)
         logger.setLevel(self._get_logging_level())
-        logger.addHandler(LoggerFactory._create_file_handler(log_name))
+        logger.addHandler(self._create_file_handler(log_name))
         logger.addHandler(
             LoggerFactory._create_sys_log_handler(
                 self._get_syslog_server(),
@@ -46,9 +44,8 @@ class LoggerFactory(ConfigurableObject):
         syslog_server_port = self.__class__._config.getint('Logging', 'SyslogPort')
         return syslog_server_port
 
-    @staticmethod
-    def _create_file_handler(log_name):
-        file_handler = logging.FileHandler(LoggerFactory._create_log_file_path(log_name))
+    def _create_file_handler(self, log_name):
+        file_handler = logging.FileHandler(self._create_log_file_path(log_name))
         file_formatter = logging.Formatter("[%(asctime)s %(process)s] %(message)s")
         file_handler.setFormatter(file_formatter)
         return file_handler
@@ -60,10 +57,13 @@ class LoggerFactory(ConfigurableObject):
         syslog_handler.setFormatter(syslog_formatter)
         return syslog_handler
 
-    @staticmethod
-    def _create_log_file_path(log_name):
+    def _create_log_file_path(self, log_name):
         log_file_name = "{0}_{1}.{2}".format(socket.gethostname(), log_name, "log")
-        log_path = os.path.join(LoggerFactory._log_base_path, log_file_name)
+        log_base_path = self.__class__._config.get('Logging', 'LogBasePath')
+        assert \
+            os.path.exists(log_base_path),\
+            "Log base path {0} supplied in the config does not exist".format(log_base_path)
+        log_path = os.path.join(log_base_path, log_file_name)
 
         # Clearing the log - comment out in production
         if os.path.exists(log_path):
