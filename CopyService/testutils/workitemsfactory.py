@@ -4,21 +4,29 @@ import uuid
 from model.phase1workitem import Phase1WorkItem
 from model.phase2workitem import Phase2WorkItem
 from fs.fsutils import FsUtils
+from bases.configurableobject import ConfigurableObject
 
 
-class WorkItemsFactory(object):
+class WorkItemsFactory(ConfigurableObject):
 
-    _root_phase1_path = "/ifs/zones/ad1/copy_svc/to/ad2"
-    _root_phase2_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
+    # _root_phase1_path = "/ifs/zones/ad1/copy_svc/to/ad2"
+    # _root_phase2_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
 
-    @staticmethod
-    def create_phase1_work_item():
+    def __init__(self):
+        _source_zone = "ad1"
+        _destination_zone = "ad2"
+        self._root_phase1_path = \
+            str(self.__class__._config.get('Phase1', 'SourceTemplate')).format(_source_zone, _destination_zone)
+        self._root_staging = \
+            str(self.__class__._config.get('Phase1', 'StagingTemplate')).format(_source_zone, _destination_zone)
+
+    def create_phase1_work_item(self):
             """
             :rtype: Phase1WorkItem
             """
             phase1_source_dir_name = WorkItemsFactory.crete_unique_name()
             phase1_source_dir_path = \
-                os.path.join(WorkItemsFactory._root_phase1_path, str(phase1_source_dir_name))
+                os.path.join(self._root_phase1_path, str(phase1_source_dir_name))
             assert not os.path.exists(phase1_source_dir_path), "Failed to generate unique directory name"
             os.mkdir(phase1_source_dir_path)
 
@@ -33,14 +41,13 @@ class WorkItemsFactory(object):
                 source_dir=phase1_source_dir_path,
                 tree_last_modified=mtime)
 
-    @staticmethod
-    def create_phase2_work_item():
+    def create_phase2_work_item(self):
             """
             :rtype: Phase1WorkItem
             """
             phase2_source_dir_name = WorkItemsFactory.crete_unique_name()
             phase2_source_dir_path = \
-                os.path.join(WorkItemsFactory._root_phase2_path, str(phase2_source_dir_name))
+                os.path.join(self._root_staging, str(phase2_source_dir_name))
             assert not os.path.exists(phase2_source_dir_path), "Failed to generate unique directory name"
             os.mkdir(phase2_source_dir_path)
             for j in range(10):

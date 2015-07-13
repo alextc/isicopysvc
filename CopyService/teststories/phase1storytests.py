@@ -39,7 +39,7 @@ class Phase1StoryTests(unittest.TestCase):
             self._validate_state()
 
     def _process_new_folder_user_action(self, phase1_work_scheduler):
-        new_work_item = WorkItemsFactory.create_phase1_work_item()
+        new_work_item = WorkItemsFactory().create_phase1_work_item()
         self._logger.debug("WorkItemFactory generated new phase1_work_item:\n{0}".format(new_work_item))
         Phase1StoryTests._user_actions_during_test.append(new_work_item)
         phase1_work_scheduler.run()

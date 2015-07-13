@@ -8,6 +8,12 @@ SyslogServer: 192.168.11.50
 SyslogPort: 514
 LogBasePath: /ifs/copy_svc/
 
+[Phase1]
+# Example: "/ifs/zones/ad1/copy_svc/to/ad2"
+SourceTemplate: /ifs/zones/{0}/copy_svc/to/{1}
+# Example: "/ifs/zones/ad1/copy_svc/staging/ad2"
+StagingTemplate: /ifs/zones/{0}/copy_svc/staging/{1}
+
 
 [Paths]
 # Application's container for config, scripts, working files

@@ -19,7 +19,7 @@ class Phase2StoryTests(unittest.TestCase):
         work_scheduler = Phase2WorkScheduler()
         heart_beat_db = Phase2Db()
         for i in range(100):
-            phase2_work_item = WorkItemsFactory.create_phase2_work_item()
+            phase2_work_item = WorkItemsFactory().create_phase2_work_item()
             my_claimed_phase2_work_item = work_scheduler.try_get_new_phase2_work_item()
             self.assertTrue(my_claimed_phase2_work_item)
             self.assertTrue(phase2_work_item.phase1_source_dir == my_claimed_phase2_work_item.phase1_source_dir)
