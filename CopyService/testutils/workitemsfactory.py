@@ -9,9 +9,6 @@ from bases.configurableobject import ConfigurableObject
 
 class WorkItemsFactory(ConfigurableObject):
 
-    # _root_phase1_path = "/ifs/zones/ad1/copy_svc/to/ad2"
-    # _root_phase2_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
-
     def __init__(self):
         _source_zone = "ad1"
         _destination_zone = "ad2"
