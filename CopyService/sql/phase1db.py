@@ -17,8 +17,11 @@ class Phase1Db:
             raise ValueError("Directory does not exist '{0}'".format(os.path.dirname(Phase1Db._data_file_path)))
 
         command = "CREATE TABLE IF NOT EXISTS phase1_work_items " \
-                  "(directory TEXT NOT NULL, last_modified timestamp NOT NULL, last_smb_write_lock timestamp NOT NULL," \
-                  " PRIMARY KEY (directory))"
+                  "(directory TEXT NOT NULL, " \
+                  "birth_time timestamp NOT NULL, " \
+                  "last_modified timestamp NOT NULL, " \
+                  "last_smb_write_lock timestamp NOT NULL," \
+                  " PRIMARY KEY (directory, birth_time))"
 
         SqliteFacade.execute_command(Phase1Db._data_file_path, command)
 
@@ -32,8 +35,9 @@ class Phase1Db:
             "Directory does not exist {0}".format(phase1_work_item.phase1_source_dir)
 
         sql_insert_query = 'INSERT INTO phase1_work_items ' \
-                           '(directory, last_modified, last_smb_write_lock ) VALUES (?,?,?)'
+                           '(directory, birth_time, last_modified, last_smb_write_lock ) VALUES (?,?,?,?)'
         parameters = (phase1_work_item.phase1_source_dir,
+                      phase1_work_item.birth_time,
                       phase1_work_item.tree_last_modified,
                       phase1_work_item.last_smb_write_lock)
 
@@ -49,11 +53,12 @@ class Phase1Db:
             "Directory does not exist {0}".format(phase1_work_item.phase1_source_dir)
 
         sql_insert_query = 'UPDATE phase1_work_items ' \
-                           'SET last_modified = ?, last_smb_write_lock= ? WHERE directory= ?'
+                           'SET last_modified = ?, last_smb_write_lock= ? WHERE directory = ? AND birth_time = ?'
 
         parameters = (phase1_work_item.tree_last_modified,
                       phase1_work_item.last_smb_write_lock,
-                      phase1_work_item.phase1_source_dir)
+                      phase1_work_item.phase1_source_dir,
+                      phase1_work_item.birth_time)
 
         SqliteFacade.execute_parameterized_command(self._data_file_path, sql_insert_query, parameters)
 
@@ -74,6 +79,7 @@ class Phase1Db:
         for qry_result in qry_results:
             result.append(Phase1WorkItem(
                 source_dir=qry_result["directory"],
+                birth_time=qry_result["birth_time"],
                 tree_last_modified=qry_result["last_modified"],
                 smb_write_lock_last_seen=qry_result["last_smb_write_lock"]))
 
@@ -91,12 +97,13 @@ class Phase1Db:
             result.append(
                 Phase1WorkItem(
                     source_dir=qry_result["directory"],
+                    birth_time=qry_result["birth_time"],
                     tree_last_modified=qry_result["last_modified"],
                     smb_write_lock_last_seen=qry_result["last_smb_write_lock"]))
 
         return result
 
-    def get_work_item(self, source_dir, validate_pre_conditions=True):
+    def get_work_item(self, source_dir, birth_time, validate_pre_conditions=True):
         """
         :type source_dir: str
         :rtype: Phase1WorkItem
@@ -108,8 +115,8 @@ class Phase1Db:
 
         logging.debug("About to perform search for {0}".format(source_dir))
 
-        params = (source_dir, )
-        query = 'SELECT * FROM phase1_work_items WHERE directory=?'
+        params = (source_dir, birth_time )
+        query = 'SELECT * FROM phase1_work_items WHERE directory = ? AND birth_time = ?'
 
         result = SqliteFacade.execute_parameterized_select(self._data_file_path, query, params)
 
@@ -117,6 +124,7 @@ class Phase1Db:
             assert len(result) == 1, "Phase1 Db is corrupted, only one record should exist per dir_name, ctime combo"
             phase1_work_item = Phase1WorkItem(
                 source_dir=result[0]["directory"],
+                birth_time=result[0]["birth_time"],
                 tree_last_modified=result[0]["last_modified"],
                 smb_write_lock_last_seen=result[0]["last_smb_write_lock"])
             return phase1_work_item
@@ -125,8 +133,8 @@ class Phase1Db:
         """
         :type phase1_work_item: Phase1WorkItem
         """
-        command = "DELETE FROM phase1_work_items WHERE directory = ?"
-        parameters = (phase1_work_item.phase1_source_dir,)
+        command = "DELETE FROM phase1_work_items WHERE directory = ? and birth_time = ?"
+        parameters = (phase1_work_item.phase1_source_dir, phase1_work_item.birth_time)
         SqliteFacade.execute_parameterized_command(self._data_file_path, command, parameters)
 
     def clear_work_items(self):

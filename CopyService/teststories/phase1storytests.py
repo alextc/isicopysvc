@@ -69,7 +69,7 @@ class Phase1StoryTests(unittest.TestCase):
 
     @staticmethod
     def sync_work_item_from_db(phase1_work_item):
-        state_in_db = Phase1Db().get_work_item(phase1_work_item.phase1_source_dir)
+        state_in_db = Phase1Db().get_work_item(phase1_work_item.phase1_source_dir, phase1_work_item.birth_time)
         assert state_in_db, "Unable to get state from Phase1 Db"
         phase1_work_item.last_smb_write_lock = state_in_db.last_smb_write_lock
         phase1_work_item.tree_last_modified = state_in_db.tree_last_modified
@@ -90,7 +90,10 @@ class Phase1StoryTests(unittest.TestCase):
                 "Phase1 source dir should not exist after stillness threshold"
             assert os.path.exists(phase1_work_item.phase2_staging_dir), \
                 "Phase2 Staging dir should exist after stillness threshold"
-            assert not Phase1Db().get_work_item(phase1_work_item.phase1_source_dir,validate_pre_conditions=False), \
+            assert not Phase1Db().get_work_item(
+                phase1_work_item.phase1_source_dir,
+                phase1_work_item.birth_time,
+                validate_pre_conditions=False), \
                 "Db record should not exist after stillness threshold"
         else:
             assert os.path.exists(phase1_work_item.phase1_source_dir), \
@@ -104,7 +107,7 @@ class Phase1StoryTests(unittest.TestCase):
             assert not os.path.exists(phase1_work_item.phase2_staging_dir), \
                 "Phase2 Staging dir should not exist after stillness threshold"
 
-            assert Phase1Db().get_work_item(phase1_work_item.phase1_source_dir), \
+            assert Phase1Db().get_work_item(phase1_work_item.phase1_source_dir, phase1_work_item.birth_time), \
                 "Db record should have existed for dir:{0} before stillness threshold".format(
                     phase1_work_item.phase1_source_dir)
 

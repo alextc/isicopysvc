@@ -32,8 +32,9 @@ class Phase1WorkScheduler(object):
 
         for phase1_source_dir in phase1_source_dirs:
             # TODO: Optimize - get both mtime and ctime at the same time
+            birth_time = FsUtils().get_dir_birth_datetime(phase1_source_dir)
             mtime = FsUtils().get_tree_mtime(phase1_source_dir)
-            existing_record = self._get_existing_record(phase1_source_dir)
+            existing_record = self._get_existing_record(phase1_source_dir, birth_time)
             smb_write_lock_last_seen = \
                 self._get_new_smb_write_lock_value(
                     phase1_source_dir,
@@ -43,6 +44,7 @@ class Phase1WorkScheduler(object):
 
             phase1_work_item = Phase1WorkItem(
                         source_dir=phase1_source_dir,
+                        birth_time=birth_time,
                         tree_last_modified=mtime,
                         smb_write_lock_last_seen=smb_write_lock_last_seen)
 
@@ -74,10 +76,10 @@ class Phase1WorkScheduler(object):
         return phase1_source_dirs
 
     @staticmethod
-    def _get_existing_record(phase1_source_dir):
+    def _get_existing_record(phase1_source_dir, birth_time):
         Phase1WorkScheduler._logger.debug(
             "Attempting to retrieve record for dir:{0} from Phase1Db".format(phase1_source_dir))
-        record_in_db = Phase1Db().get_work_item(phase1_source_dir)
+        record_in_db = Phase1Db().get_work_item(phase1_source_dir, birth_time)
         if record_in_db:
             Phase1WorkScheduler._logger.debug("Successfully retrieved db record")
             Phase1WorkScheduler._logger.debug("{0}".format(record_in_db))

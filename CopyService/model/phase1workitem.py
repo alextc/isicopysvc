@@ -7,9 +7,10 @@ from common.datetimeutils import DateTimeUtils
 
 class Phase1WorkItem(object):
 
-    def __init__(self, source_dir, tree_last_modified, smb_write_lock_last_seen=None):
+    def __init__(self, source_dir, birth_time, tree_last_modified, smb_write_lock_last_seen=None):
         """
         :type source_dir: str
+        :type birth_time: datetime.datetime
         :type tree_last_modified: datetime.datetime
         :return:
         """
@@ -17,6 +18,7 @@ class Phase1WorkItem(object):
               "Unable to locate phase1_source_dir {0}".format(source_dir)
 
         self.phase1_source_dir = os.path.abspath(source_dir)
+        self.birth_time = birth_time
         self.tree_last_modified = tree_last_modified
 
         if smb_write_lock_last_seen:
@@ -32,11 +34,13 @@ class Phase1WorkItem(object):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.phase1_source_dir == other.phase1_source_dir and \
+                   self.birth_time == other.birth_time and \
                    self.tree_last_modified == other.tree_last_modified and \
                    self.last_smb_write_lock == other.last_smb_write_lock
 
     def __str__(self):
         result = "Phase1 Source:{0}\n".format(self.phase1_source_dir) + \
+                 "Birth Time: {0}\n".format(self.birth_time.strftime("%Y-%m-%d %H:%M:%S:%f")) + \
                  "Phase2 Staging:{0}\n".format(self.phase2_staging_dir) + \
                  "Tree Last Modified:{0}\n".format(
                      self.tree_last_modified.strftime("%Y-%m-%d %H:%M:%S:%f")) + \

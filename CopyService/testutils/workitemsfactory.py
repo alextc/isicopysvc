@@ -33,9 +33,11 @@ class WorkItemsFactory(ConfigurableObject):
                 f = open(file_name, 'w+')
                 f.close()
 
+            birth_time = FsUtils().get_dir_birth_datetime(phase1_source_dir_path)
             mtime = FsUtils().get_tree_mtime(phase1_source_dir_path)
             return Phase1WorkItem(
                 source_dir=phase1_source_dir_path,
+                birth_time=birth_time,
                 tree_last_modified=mtime)
 
     def create_phase2_work_item(self):
