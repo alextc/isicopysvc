@@ -1,7 +1,7 @@
 __author__ = 'alextc'
-
+import datetime
 from subprocess import Popen, PIPE
-import logging
+from common.datetimeutils import DateTimeUtils
 
 
 class Stat(object):
@@ -10,10 +10,9 @@ class Stat(object):
 
     @staticmethod
     def get_birth_time(path):
-        # TODO: How to pass multiple parameters
         process = Popen(['stat', "-f '%SB' ", path], stdout=PIPE, stderr=PIPE)
-
         stdout, notused = process.communicate()
-        result = stdout.split()[0].decode('utf-8')
-
-        # TODO: Convert to datetime
+        result = stdout.decode('utf-8').strip().replace("'", "")
+        # Jul 14 11:07:58 2015
+        dir_birth_date = datetime.datetime.strptime(result, "%b %d %X %Y")
+        return dir_birth_date

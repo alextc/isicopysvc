@@ -7,6 +7,7 @@ from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
 from cluster.heartbeatmanager import HeartBeatManager
 from log.loggerfactory import LoggerFactory
+from lnx.stat import Stat
 
 
 class FsUtils(object):
@@ -23,6 +24,11 @@ class FsUtils(object):
         result_to_abs_path = [os.path.abspath(d) for d in result]
         FsUtils._logger.debug("\n\tRETURNING:\n\t\t%s", "\n\t\t".join(result_to_abs_path))
         return result_to_abs_path
+
+    @staticmethod
+    def get_dir_birth_datetime(path):
+        assert os.path.exists(path), "dir:{0}, passed that was passed to dir_birth_datetime does not exist".format(path)
+        return Stat.get_birth_time(path)
 
     """
     # ctime does not equal creation time; it changes as files are added and removed from the dir
