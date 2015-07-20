@@ -47,7 +47,7 @@ Retry:  5
 Stale_HB:  5
 
 [Check_running]
-Stale:  60
+Stale:  10
 Running:  3
 LogPath:  /ifs
 LogFile:  cron_logs.txt
@@ -55,8 +55,10 @@ LogFile:  cron_logs.txt
 [Check_running_one_node]
 #Process:  isi_mcp
 Process:  /ifs/copy_svc/phase1.py
+HB_file_1:  /ifs/copy_svc/Phase1Worker.log
 
 [Check_running_each_node]
 Process:  /ifs/copy_svc/test_phase2.py
 #Process:  /ifs/copy_svc/phase2.py
+HB_file_2:  /ifs/copy_svc/Phase2Worker.log
 
