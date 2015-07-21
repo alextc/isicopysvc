@@ -4,6 +4,7 @@ import ConfigParser
 import datetime
 import logging
 import subprocess
+from sql.heartbeatdb import HeartBeatDb
 
 CONFIG_FILE = "/ifs/copy_svc/config"
 
@@ -47,27 +48,40 @@ def get_date():
     """
     return datetime.datetime.now().strftime("%Y, %m, %d, %H, %M, %S")
 
-def get_last_heartbeat_phase1():
-    """
-    Read last line of the log file
-    :return: timestamp (2015, 06, 23, 06, 29, 43)
-    """
-    with open(HEARTBEAT_LOG_PHASE1, 'r') as f:
-        this_heartbeat = f.readlines()[-1].rstrip()
-        this_edited_heartbeat = this_heartbeat.split(',')[0].strip('[')
-        a_edited_this_heartbeat = this_edited_heartbeat.replace(' ', ', ')
-        b_edited_this_heartbeat = a_edited_this_heartbeat.replace('-', ', ')
-        final_edited_this_heartbeat = b_edited_this_heartbeat.replace(':', ', ')
-        return final_edited_this_heartbeat
+#def get_last_heartbeat_phase1():
+#    """
+#    Read last line of the log file
+#    :return: timestamp (2015, 06, 23, 06, 29, 43)
+#    """
+#    with open(HEARTBEAT_LOG_PHASE1, 'r') as f:
+#        this_heartbeat = f.readlines()[-1].rstrip()
+#        this_edited_heartbeat = this_heartbeat.split(',')[0].strip('[')
+#        a_edited_this_heartbeat = this_edited_heartbeat.replace(' ', ', ')
+#        b_edited_this_heartbeat = a_edited_this_heartbeat.replace('-', ', ')
+#        final_edited_this_heartbeat = b_edited_this_heartbeat.replace(':', ', ')
+#        return final_edited_this_heartbeat
 
-def get_heartbeat_diff_phase1():
+#def _assert_heartbeat_was_written(self):
+#    latest_heartbeat = self._heartbeatdb.get_heartbeat(socket.gethostname(), os.getpid())
+#    assert latest_heartbeat, "Unable to get latest heartbeat"
+#    assert DateTimeUtils.get_total_seconds_for_timedelta(
+#        datetime.datetime.now() - latest_heartbeat) < 1,\
+#        "heartbeat is stale - unexpected"
+
+theDB = HeartBeatDb('phase1')
+def get_last_heartbeat_phase1(node, pid):
+    return theDB.get_heartbeat(node, pid)
+
+
+def get_heartbeat_diff_phase1(node, pid):
     """
     Difference in seconds
     :return: integer (seconds)
     """
-    current = datetime.datetime.strptime(get_date(), '%Y, %m, %d, %H, %M, %S')
-    last_record = datetime.datetime.strptime(get_last_heartbeat_phase1(), '%Y, %m, %d, %H, %M, %S')
-    return (current - last_record).seconds
+    current = datetime.datetime.now()
+    last_record = get_last_heartbeat_phase1(node, pid)
+    diff_in_seconds = (current - last_record).seconds
+    return (diff_in_seconds, last_record)
 
 def get_processes(process_name):
     my_ret = {}
@@ -126,10 +140,12 @@ def kill_all(process_to_kill):
         logging.info("Killing {0} now".format(i))
         subprocess.Popen(['/bin/bash', '-c', '/usr/bin/isi_for_array /bin/kill {0} '.format(i)], stderr=null,
               stdout=null).communicate()
+    return
 
 def kill_this_pid(pid, node):
     """ Given pid and node, kill it"""
-    pass
+    subprocess.Popen(['/bin/bash', '-c', '/usr/bin/isi_for_array', '-n', node, '/bin/kill {0} '.format(pid)], stderr=null, stdout=null).communicate()
+    return
 
 def kill_em_all(node, pids):
     """ Kill all pids on node"""
@@ -166,6 +182,36 @@ def get_pids(process_output):
         _list_of_pids.append(this_processes_pid)
     return _list_of_pids
 
+def get_phase2_heartbeats_on_node(node):
+    _master = {}
+    with open('/ifs/copy_svc/' + node + '_Phase2Worker.log') as hb_file:
+        while 1:
+            line = hb_file.readline()
+            if line and line.startswith('['):
+                a_line_list = line.split()
+
+                date_day = a_line_list[0].lstrip('[')
+                date_time_a = a_line_list[1].split(',')
+                date_time_b = date_time_a[0]
+                date_day_time = date_day + ', ' + date_time_b
+                date_end = date_day_time.replace('-', ', ').replace(':', ', ')
+
+                pid  = a_line_list[2].rstrip(']')
+                if pid in _master.keys():
+                    _master[pid].append(date_end)
+                else:
+                    _master[pid] = []
+                    _master[pid].append(date_end)
+            else:
+                break
+    for pid in _master.keys():
+        _master[pid].sort()
+    pids_with_latest_timestamps = []
+    for pid in _master.keys():
+        pids_with_latest_timestamps.append((pid, _master[pid][-1]))
+
+    return pids_with_timestamps
+
 def get_heartbeat_for_pid_on_node(node, pid):
     #Host:b7201-1
     #PID:82070
@@ -175,18 +221,16 @@ def get_heartbeat_for_pid_on_node(node, pid):
     #[2015-07-16 12:04:19,036 82070] About to move /ifs/zones/ad1/copy_svc/staging/ad2/258384 to /ifs/zones/ad2/copy_svc/from/ad1/258384
     pass
             
-def check_stale_phase2(node, pid):
-    """Given a phase2 PID and node PID on, return True if stale""" 
-    last_seen = get_heartbeat_for_pid_on_node(node, pid)
-    if last_seen >= STALE_HEARTBEAT:
+def check_stale_phase2(last_seen):
+    """Given a heartbeat, return True if stale""" 
+    if last_seen and last_seen >= STALE_HEARTBEAT:
         state = True
     else:
         state = False
-    return (state, last_seen)
+    return state
 
 def main():
     set_config()
-    #HEARTBEAT_LOG_PHASE1 = '/ifs/copy_svc/Phase1Worker.log.STALE'
 
     # Phase1:  We only want one instance running on one node
     # ------------------------------------------------------
@@ -212,15 +256,19 @@ def main():
                 logging.info("Processes found %s" % dict_processes_phase1[each_node]['process_output'])
 
     # Second verify have good heartbeat
-    last_heartbeat = get_last_heartbeat_phase1()
-    last_heartbeat_diff = get_heartbeat_diff_phase1()
-    if last_heartbeat_diff >= STALE_HEARTBEAT:
-        logging.info("%s has stale heartbeat:%s.  Killing all to start fresh." % (LOOK_FOR_PHASE1, last_heartbeat))
-        kill_all(LOOK_FOR_PHASE1)
-        start_phase1(LOOK_FOR_PHASE1)
-    for each_node in dict_processes_phase1.keys():
-        if dict_processes_phase1[each_node]['process_output']:
-            logging.info("Heartbeat found %s" % last_heartbeat)
+    dict_processes_phase1 = get_processes(LOOK_FOR_PHASE1)
+    for node in dict_processes_phase1.keys():
+        if dict_processes_phase1[node]['frequency'] == 1:
+            this_pid_a = dict_processes_phase1[node]['process_output'][0].split()
+            this_pid_b = this_pid_a[2]
+            last_heartbeat_diff, last_heartbeat = get_heartbeat_diff_phase1(node, this_pid_b)
+            if last_heartbeat_diff >= STALE_HEARTBEAT:
+                logging.info("%s has stale heartbeat:%s.  Killing all to start fresh." % (LOOK_FOR_PHASE1, last_heartbeat))
+                kill_all(LOOK_FOR_PHASE1)
+                start_phase1(LOOK_FOR_PHASE1)
+            for each_node in dict_processes_phase1.keys():
+                if dict_processes_phase1[each_node]['process_output']:
+                    logging.info("Current heartbeat found %s" % last_heartbeat)
 
     # Phase2:  We should have NUMBER_RUNNING_PHASE2 running on each node
     # ------------------------------------------------------------------
@@ -247,16 +295,19 @@ def main():
     # Second verify have current heartbeat for each process running
     dict_processes_phase2 = get_processes(LOOK_FOR_PHASE2)
     for each_node in dict_processes_phase2.keys():
+        current_heartbeats_and_pids_on_node = get_phase2_heartbeats_on_node(each_node)
         for each_running_process in dict_processes_phase2[each_node]['process_output']:
             this_processes_pid = each_running_process.split()[2]
-            is_this_pid_stale, last_heartbeat_for_this_pid = check_stale_phase2(each_node, this_processes_pid)
+            for each_element in current_heartbeats_and_pids_on_node:
+                if this_processes_pid in each_element:
+                    current_heartbeat_for_this_pid = each_element[0]
+
+            is_this_pid_stale = check_stale_phase2(current_heartbeat_for_this_pid)
             if is_this_pid_stale:
-                #logging.info("Stale heartbeat.  Killing %s on node %s.  %s" %  (each_running_process, node, last_heartbeat_for_this_pid))
-                #kill_this_pid(pid, node)
-                pass
+                logging.info("Stale heartbeat.  Killing %s on node %s.  %s" %  (each_running_process, each_node, current_heartbeat_for_this_pid))
+                kill_this_pid(pid, node)
             else:
-                #logging.info("Good heartbeat for %s on node %s.  %s" %  (each_running_process, node, last_heartbeat_for_this_pid))
-                pass
+                logging.info("Good heartbeat for %s on node %s.  %s" %  (each_running_process, node, last_heartbeat_for_this_pid))
 
 
 
