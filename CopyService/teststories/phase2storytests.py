@@ -5,7 +5,7 @@ from testutils.workitemsfactory import WorkItemsFactory
 from testutils.cleaner import Cleaner
 from phase2work.phase2worker import Phase2Worker
 from phase2work.phase2workscheduler import Phase2WorkScheduler
-from cluster.heartbeatmanager import HeartBeatManager
+from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
 from sql.phase2db import Phase2Db
 
 
@@ -26,7 +26,7 @@ class Phase2StoryTests(unittest.TestCase):
             # state should be different
             self.assertFalse(phase2_work_item == my_claimed_phase2_work_item)
             my_claimed_phase2_work_item.state = "ReAcl"
-            worker.run(my_claimed_phase2_work_item, HeartBeatManager(heart_beat_db, my_claimed_phase2_work_item))
+            worker.run(my_claimed_phase2_work_item, Phase2WorkItemHeartBeatManager(heart_beat_db, my_claimed_phase2_work_item))
 
 if __name__ == '__main__':
     unittest.main()

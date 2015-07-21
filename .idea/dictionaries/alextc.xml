@@ -9,6 +9,7 @@
       <w>currentdir</w>
       <w>fromtimestamp</w>
       <w>getsmblockscommand</w>
+      <w>heartbeatdb</w>
       <w>isiapi</w>
       <w>levelname</w>
       <w>lockfile</w>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="DataSourceManagerImpl" format="xml" hash="3410058514">
+  <component name="DataSourceManagerImpl" format="xml" hash="2858079282">
     <data-source source="LOCAL" name="phase1" uuid="2b6c1ccd-cc48-4b89-bc57-ed71d89e7bd7">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
@@ -14,6 +14,13 @@
           <url>file://$APPLICATION_CONFIG_DIR$/jdbc-drivers/sqlite-jdbc-3.8.9.jar</url>
         </library>
       </libraries>
+    </data-source>
+    <data-source source="LOCAL" name="Phase1Heartbeat" uuid="67f7045d-69df-4590-a8f3-a62e5314fb57">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:W:/copy_svc/phase1heartbeat.db</jdbc-url>
+      <libraries />
     </data-source>
   </component>
 </project>

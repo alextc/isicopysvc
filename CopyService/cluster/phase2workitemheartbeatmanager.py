@@ -3,11 +3,10 @@ from sql.phase2db import Phase2Db
 from model.phase2workitem import Phase2WorkItem
 import datetime
 import logging
-from aop.logstartandexit import LogEntryAndExit
 from common.datetimeutils import DateTimeUtils
 
 
-class HeartBeatManager(object):
+class Phase2WorkItemHeartBeatManager(object):
     def __init__(self, heart_beat_db, phase2_work_item):
         """
         :type heart_beat_db: Phase2Db
@@ -18,7 +17,6 @@ class HeartBeatManager(object):
         self._phase2_work_item = phase2_work_item
         self._last_heart_beat = None
 
-    @LogEntryAndExit(logging.getLogger())
     def write_heart_beat(self, force=False):
         if force or self._should_write_heart_beat():
             self._phase2_work_item.heartbeat = datetime.datetime.now()
@@ -44,7 +42,6 @@ class HeartBeatManager(object):
         else:
             return False
 
-    @LogEntryAndExit(logging.getLogger())
     def _should_write_heart_beat(self):
         """
         :rtype: bool

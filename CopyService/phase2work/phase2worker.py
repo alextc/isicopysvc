@@ -2,7 +2,7 @@ __author__ = 'alextc'
 import shutil
 import logging
 from fs.fsutils import FsUtils
-from cluster.heartbeatmanager import HeartBeatManager
+from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
 from model.phase2workitem import Phase2WorkItem
 from log.loggerfactory import LoggerFactory
 
@@ -17,7 +17,7 @@ class Phase2Worker(object):
     def run(self, work_item, heart_beat_manager):
         """
         :type work_item: Phase2WorkItem
-        :type heart_beat_manager: HeartBeatManager
+        :type heart_beat_manager: Phase2WorkItemHeartBeatManager
         :return:
         """
         self._logger.debug("Received phase1work item to process:\n{0}".format(work_item))

@@ -5,7 +5,7 @@ import datetime
 import shutil
 from isiapi.getaclcommand import GetAclCommand
 from isiapi.setaclcommand import SetAclCommand
-from cluster.heartbeatmanager import HeartBeatManager
+from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
 from log.loggerfactory import LoggerFactory
 from lnx.stat import Stat
 
@@ -86,7 +86,7 @@ class FsUtils(object):
         """
         :param target_dir:
         :param template_dir:
-        :type heart_beat_manager: HeartBeatManager
+        :type heart_beat_manager: Phase2WorkItemHeartBeatManager
         :return:
         """
         FsUtils._logger.debug("Template:{0}".format(template_dir))

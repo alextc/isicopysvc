@@ -4,7 +4,7 @@ import logging
 import random
 from model.phase2workitem import Phase2WorkItem
 from sql.phase2db import Phase2Db
-from cluster.heartbeatmanager import HeartBeatManager
+from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
 from aop.logstartandexit import LogEntryAndExit
 from fs.fsutils import FsUtils
 
@@ -49,7 +49,7 @@ class Phase2WorkScheduler(object):
     @LogEntryAndExit(logging.getLogger())
     def _try_to_take_ownership(self, potential_phase2_work_item):
         logging.debug("About to attempt to take ownership on work_item:\n{0}".format(potential_phase2_work_item))
-        heart_beat_manager = HeartBeatManager(self._heart_beat_db, potential_phase2_work_item)
+        heart_beat_manager = Phase2WorkItemHeartBeatManager(self._heart_beat_db, potential_phase2_work_item)
         existing_heart_beat = heart_beat_manager.get_heart_beat()
         if existing_heart_beat and not existing_heart_beat.is_heart_beat_stale():
             logging.debug("Attempt to own dir {0} failed, since it is actively owned by {1}:{2}".format(

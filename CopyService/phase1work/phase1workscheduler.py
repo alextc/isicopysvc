@@ -5,7 +5,7 @@ from isiapi.getsmblockscommand import GetSmbLocksCommand
 from model.phase1workitem import Phase1WorkItem
 from sql.phase1db import Phase1Db
 from log.loggerfactory import LoggerFactory
-
+from sql.heartbeatdb import HeartBeatDb
 
 class Phase1WorkScheduler(object):
 
@@ -16,9 +16,11 @@ class Phase1WorkScheduler(object):
     _logger = LoggerFactory().create('Phase1WorkScheduler')
 
     def __init__(self):
-        pass
+        self._heartbeatdb = HeartBeatDb('phase1')
 
     def run(self):
+        # TODO: Surround this call with a check ShouldWriteHeartbeat (no reason to write this several times per sec)
+        self._heartbeatdb.write_heartbeat()
         phase1_source_dirs = self._get_phase1_source_dirs()
         smb_write_locks = self._get_smb_write_locks(phase1_source_dirs)
         self._update_phase1_db(phase1_source_dirs, smb_write_locks)

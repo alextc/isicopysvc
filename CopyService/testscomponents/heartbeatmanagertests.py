@@ -6,7 +6,7 @@ import logging
 import time
 from model.phase2workitem import Phase2WorkItem
 from sql.phase2db import Phase2Db
-from cluster.heartbeatmanager import HeartBeatManager
+from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
 from fs.fsutils import FsUtils
 
 
@@ -20,7 +20,7 @@ class HeartBeatManagerTests(unittest.TestCase):
 
         # Test
         heart_beat_db = Phase2Db()
-        heart_beat_manager = HeartBeatManager(heart_beat_db, phase2_work_item)
+        heart_beat_manager = Phase2WorkItemHeartBeatManager(heart_beat_db, phase2_work_item)
         heart_beat_manager.write_heart_beat()
 
         # validate
@@ -33,7 +33,7 @@ class HeartBeatManagerTests(unittest.TestCase):
 
         # Test
         heart_beat_db = Phase2Db()
-        heart_beat_manager = HeartBeatManager(heart_beat_db, phase2_work_item)
+        heart_beat_manager = Phase2WorkItemHeartBeatManager(heart_beat_db, phase2_work_item)
         heart_beat_manager.write_heart_beat()
         confirmation1 = heart_beat_db.get_heart_beat(phase2_work_item.phase2_source_dir)
         self.assertEquals(confirmation1, phase2_work_item)
@@ -50,7 +50,7 @@ class HeartBeatManagerTests(unittest.TestCase):
 
         # Test
         heart_beat_db = Phase2Db()
-        heart_beat_manager = HeartBeatManager(heart_beat_db, phase2_work_item)
+        heart_beat_manager = Phase2WorkItemHeartBeatManager(heart_beat_db, phase2_work_item)
         heart_beat_manager.write_heart_beat()
         confirmation1 = heart_beat_db.get_heart_beat(phase2_work_item.phase2_source_dir)
         self.assertEquals(confirmation1, phase2_work_item)
@@ -70,7 +70,7 @@ class HeartBeatManagerTests(unittest.TestCase):
 
         # Test
         heart_beat_db = Phase2Db()
-        orig_heart_beat_manager = HeartBeatManager(heart_beat_db, orig_owner_phase2_work_item)
+        orig_heart_beat_manager = Phase2WorkItemHeartBeatManager(heart_beat_db, orig_owner_phase2_work_item)
         orig_heart_beat_manager.write_heart_beat()
         confirmation1 = heart_beat_db.get_heart_beat(orig_owner_phase2_work_item.phase2_source_dir)
         self.assertEquals(confirmation1, orig_owner_phase2_work_item)
@@ -78,7 +78,7 @@ class HeartBeatManagerTests(unittest.TestCase):
         # Try to claim ownership - different pid or host
         new_owner_phase2_work_item = orig_owner_phase2_work_item
         new_owner_phase2_work_item.host = "foo_host"
-        new_heart_beat_manager = HeartBeatManager(heart_beat_db, new_owner_phase2_work_item)
+        new_heart_beat_manager = Phase2WorkItemHeartBeatManager(heart_beat_db, new_owner_phase2_work_item)
 
         # Validation
         self.assertFalse(new_heart_beat_manager.try_to_take_ownership_of_heart_beating())
