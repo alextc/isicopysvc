@@ -72,7 +72,8 @@ class HeartBeatDb:
         if not qry_results:
             return
 
-        result = qry_results["last_heartbeat"],
+        assert len(qry_results) == 1, "Get Heartbeat must return 0 or 1 record"
+        result = qry_results[0]["last_heartbeat"]
         return result
 
     def delete_heartbeat(self, node, pid):

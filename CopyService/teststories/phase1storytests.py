@@ -2,13 +2,17 @@ __author__ = 'alextc'
 import unittest
 import random
 import os
+import socket
+import time
 import datetime
 from phase1work.phase1workscheduler import Phase1WorkScheduler
 from phase1work.phase1worker import Phase1Worker
 from sql.phase1db import Phase1Db
+from sql.heartbeatdb import HeartBeatDb
 from testutils.workitemsfactory import WorkItemsFactory
 from testutils.cleaner import Cleaner
 from log.loggerfactory import LoggerFactory
+from common.datetimeutils import DateTimeUtils
 
 
 class Phase1StoryTests(unittest.TestCase):
@@ -18,6 +22,7 @@ class Phase1StoryTests(unittest.TestCase):
     def setUp(self):
         self._logger = LoggerFactory().create(Phase1StoryTests.__name__)
         Cleaner().clean_phase1()
+        self._heartbeatdb = HeartBeatDb("phase1")
 
     def test_phase1_story(self):
         phase1_work_scheduler = Phase1WorkScheduler()
@@ -27,16 +32,17 @@ class Phase1StoryTests(unittest.TestCase):
             self._logger.debug("User action is {0}".format(user_action))
 
             if user_action == "noop":
-                continue
+                time.sleep(0.1)
             elif user_action == "new_folder":
                 self._process_new_folder_user_action(phase1_work_scheduler)
+                self._assert_heartbeat_was_written()
             elif user_action == "smb_write_lock_file":
                 self._process_smb_write_lock_user_action(phase1_work_scheduler)
             else:
                 raise ValueError("Unexpected user action {0}".format(user_action))
 
             phase1_worker.run()
-            self._validate_state()
+            self._assert_work_items_are_in_valid_state()
 
     def _process_new_folder_user_action(self, phase1_work_scheduler):
         new_work_item = WorkItemsFactory().create_phase1_work_item()
@@ -74,7 +80,7 @@ class Phase1StoryTests(unittest.TestCase):
         phase1_work_item.last_smb_write_lock = state_in_db.last_smb_write_lock
         phase1_work_item.tree_last_modified = state_in_db.tree_last_modified
 
-    def _validate_state(self):
+    def _assert_work_items_are_in_valid_state(self):
         for user_action in Phase1StoryTests._user_actions_during_test:
             self._logger.debug("About to validate item:\n{0}".format(user_action))
             self.assertTrue(self.is_phase1_work_item_in_valid_state(user_action))
@@ -117,6 +123,14 @@ class Phase1StoryTests(unittest.TestCase):
         # TODO: Add Delete - currently this use case is undefined
         user_actions = ['new_folder', 'smb_write_lock_file', 'noop']
         return random.choice(user_actions)
+
+    def _assert_heartbeat_was_written(self):
+        latest_heartbeat = self._heartbeatdb.get_heartbeat(socket.gethostname(), os.getpid())
+        print "last_heartbeat", latest_heartbeat
+        assert latest_heartbeat, "Unable to get latest heartbeat"
+        assert DateTimeUtils.get_total_seconds_for_timedelta(
+            datetime.datetime.now() - latest_heartbeat) < 1,\
+            "heartbeat is stale - unexpected"
 
 if __name__ == '__main__':
     unittest.main()
