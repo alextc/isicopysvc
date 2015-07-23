@@ -15,7 +15,7 @@ class Phase2(object):
 
 if __name__ == '__main__':
     phase2 = Phase2()
-    for i in range(500):
+    while True:
         my_work_item = phase2.work_scheduler.try_get_new_phase2_work_item()
         if my_work_item:
             my_work_item.state = "ReAcl"
