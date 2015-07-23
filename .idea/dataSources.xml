@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="DataSourceManagerImpl" format="xml" hash="2858079282">
-    <data-source source="LOCAL" name="phase1" uuid="2b6c1ccd-cc48-4b89-bc57-ed71d89e7bd7">
+  <component name="DataSourceManagerImpl" format="xml" hash="2425879458">
+    <data-source source="LOCAL" name="phase1" read-only="true" uuid="2b6c1ccd-cc48-4b89-bc57-ed71d89e7bd7">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
@@ -15,11 +15,18 @@
         </library>
       </libraries>
     </data-source>
-    <data-source source="LOCAL" name="Phase1Heartbeat" uuid="67f7045d-69df-4590-a8f3-a62e5314fb57">
+    <data-source source="LOCAL" name="Phase1Heartbeat" read-only="true" uuid="67f7045d-69df-4590-a8f3-a62e5314fb57">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:W:/copy_svc/phase1heartbeat.db</jdbc-url>
+      <libraries />
+    </data-source>
+    <data-source source="LOCAL" name="Phase2HeartBeat" uuid="9f92b5eb-8861-4dca-b268-91b1ec550b36">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:Z:/phase2heartbeat.db</jdbc-url>
       <libraries />
     </data-source>
   </component>

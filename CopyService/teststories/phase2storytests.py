@@ -7,12 +7,14 @@ from phase2work.phase2worker import Phase2Worker
 from phase2work.phase2workscheduler import Phase2WorkScheduler
 from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
 from sql.phase2db import Phase2Db
+from testutils.heartbeatassertions import HeartBeatAssertions
 
 
 class Phase2StoryTests(unittest.TestCase):
     def setUp(self):
         self._logger = LoggerFactory().create(Phase2StoryTests.__name__)
         Cleaner().clean_phase2()
+        self._heartbeat_assertions = HeartBeatAssertions()
 
     def test_phase2_story(self):
         worker = Phase2Worker()
@@ -21,6 +23,7 @@ class Phase2StoryTests(unittest.TestCase):
         for i in range(100):
             phase2_work_item = WorkItemsFactory().create_phase2_work_item()
             my_claimed_phase2_work_item = work_scheduler.try_get_new_phase2_work_item()
+            self._heartbeat_assertions.assert_heartbeat_phase2_was_written()
             self.assertTrue(my_claimed_phase2_work_item)
             self.assertTrue(phase2_work_item.phase1_source_dir == my_claimed_phase2_work_item.phase1_source_dir)
             # state should be different

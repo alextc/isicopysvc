@@ -4,8 +4,8 @@ import logging
 import random
 from model.phase2workitem import Phase2WorkItem
 from sql.phase2db import Phase2Db
+from sql.heartbeatdb import HeartBeatDb
 from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
-from aop.logstartandexit import LogEntryAndExit
 from fs.fsutils import FsUtils
 
 
@@ -14,10 +14,11 @@ class Phase2WorkScheduler(object):
         self._phase1_output_path = "/ifs/zones/*/copy_svc/staging/*/*/"
         self._max_retry_count = 5
         self._max_stale_hb_time_in_seconds = 30
+        self._heartbeatdb = HeartBeatDb('phase2')
         self._heart_beat_db = Phase2Db()
 
-    @LogEntryAndExit(logging.getLogger())
     def try_get_new_phase2_work_item(self):
+        self._heartbeatdb.write_heartbeat()
         potential_phase2_work_item = self._get_potential_work_item()
         if not potential_phase2_work_item:
             return False
@@ -29,7 +30,6 @@ class Phase2WorkScheduler(object):
         logging.debug("Returning False could neither find nor claim new work_item")
         return False
 
-    @LogEntryAndExit(logging.getLogger())
     def _get_potential_work_item(self):
         potential_work_inputs = glob.glob(self._phase1_output_path)
         if not potential_work_inputs:
@@ -46,7 +46,6 @@ class Phase2WorkScheduler(object):
 
         return Phase2WorkItem(random_dir, last_modified)
 
-    @LogEntryAndExit(logging.getLogger())
     def _try_to_take_ownership(self, potential_phase2_work_item):
         logging.debug("About to attempt to take ownership on work_item:\n{0}".format(potential_phase2_work_item))
         heart_beat_manager = Phase2WorkItemHeartBeatManager(self._heart_beat_db, potential_phase2_work_item)

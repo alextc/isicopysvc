@@ -2,7 +2,6 @@ __author__ = 'alextc'
 import unittest
 import random
 import os
-import socket
 import time
 import datetime
 from phase1work.phase1workscheduler import Phase1WorkScheduler
@@ -11,8 +10,8 @@ from sql.phase1db import Phase1Db
 from sql.heartbeatdb import HeartBeatDb
 from testutils.workitemsfactory import WorkItemsFactory
 from testutils.cleaner import Cleaner
+from testutils.heartbeatassertions import HeartBeatAssertions
 from log.loggerfactory import LoggerFactory
-from common.datetimeutils import DateTimeUtils
 
 
 class Phase1StoryTests(unittest.TestCase):
@@ -23,6 +22,7 @@ class Phase1StoryTests(unittest.TestCase):
         self._logger = LoggerFactory().create(Phase1StoryTests.__name__)
         Cleaner().clean_phase1()
         self._heartbeatdb = HeartBeatDb("phase1")
+        self._heartbeat_assertions = HeartBeatAssertions()
 
     def test_phase1_story(self):
         phase1_work_scheduler = Phase1WorkScheduler()
@@ -30,12 +30,11 @@ class Phase1StoryTests(unittest.TestCase):
         for i in range(100):
             user_action = self._select_random_user_action()
             self._logger.debug("User action is {0}".format(user_action))
-
             if user_action == "noop":
                 time.sleep(0.1)
             elif user_action == "new_folder":
                 self._process_new_folder_user_action(phase1_work_scheduler)
-                self._assert_heartbeat_was_written()
+                self._heartbeat_assertions.assert_heartbeat_phase1_was_written()
             elif user_action == "smb_write_lock_file":
                 self._process_smb_write_lock_user_action(phase1_work_scheduler)
             else:
@@ -123,14 +122,6 @@ class Phase1StoryTests(unittest.TestCase):
         # TODO: Add Delete - currently this use case is undefined
         user_actions = ['new_folder', 'smb_write_lock_file', 'noop']
         return random.choice(user_actions)
-
-    def _assert_heartbeat_was_written(self):
-        latest_heartbeat = self._heartbeatdb.get_heartbeat(socket.gethostname(), os.getpid())
-        print "last_heartbeat", latest_heartbeat
-        assert latest_heartbeat, "Unable to get latest heartbeat"
-        assert DateTimeUtils.get_total_seconds_for_timedelta(
-            datetime.datetime.now() - latest_heartbeat) < 1,\
-            "heartbeat is stale - unexpected"
 
 if __name__ == '__main__':
     unittest.main()
