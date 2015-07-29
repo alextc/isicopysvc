@@ -8,9 +8,16 @@ from phase2work.phase2workscheduler import Phase2WorkScheduler
 from cluster.phase2workitemheartbeatmanager import Phase2WorkItemHeartBeatManager
 from sql.phase2db import Phase2Db
 from testutils.heartbeatassertions import HeartBeatAssertions
+from testutils.aclassertions import AclAssertions
 
 
 class Phase2StoryTests(unittest.TestCase):
+
+    AD2_ISI_ADMINS = "S-1-5-21-2576225250-2004976870-3728844968-1108"
+    AD2_ISI_READERS = "S-1-5-21-2576225250-2004976870-3728844968-1106"
+    AD2_ISI_WRITERS = "S-1-5-21-2576225250-2004976870-3728844968-1107"
+    EXPECTED_SIDS_IN_ACL = [AD2_ISI_ADMINS, AD2_ISI_WRITERS, AD2_ISI_READERS]
+
     def setUp(self):
         self._logger = LoggerFactory().create(Phase2StoryTests.__name__)
         Cleaner().clean_phase2()
@@ -29,7 +36,14 @@ class Phase2StoryTests(unittest.TestCase):
             # state should be different
             self.assertFalse(phase2_work_item == my_claimed_phase2_work_item)
             my_claimed_phase2_work_item.state = "ReAcl"
-            worker.run(my_claimed_phase2_work_item, Phase2WorkItemHeartBeatManager(heart_beat_db, my_claimed_phase2_work_item))
+            worker.run(
+                my_claimed_phase2_work_item,
+                Phase2WorkItemHeartBeatManager(
+                    heart_beat_db, my_claimed_phase2_work_item))
+
+            AclAssertions.assert_sid_has_access_to_tree(
+                my_claimed_phase2_work_item.target_dir,
+                Phase2StoryTests.EXPECTED_SIDS_IN_ACL)
 
 if __name__ == '__main__':
     unittest.main()

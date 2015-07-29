@@ -8,7 +8,7 @@ class Cleaner(object):
 
     _phase1_source_root_path = "/ifs/zones/ad1/copy_svc/to/ad2"
     _phase2_source_root_path = "/ifs/zones/ad1/copy_svc/staging/ad2"
-    _phase2_destination_root_path = "/ifs/zones/ad2/copy_svc/from/ad2"
+    _phase2_destination_root_path = "/ifs/zones/ad2/copy_svc/from/ad1"
 
     @staticmethod
     def clean_phase1():

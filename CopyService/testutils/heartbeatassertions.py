@@ -8,7 +8,7 @@ from common.datetimeutils import DateTimeUtils
 
 class HeartBeatAssertions(object):
 
-    _max_allowed_heartbeat_drift = 2
+    _max_allowed_heartbeat_drift = 10
 
     def __init__(self):
         self._heartbeatdb_phase1 = HeartBeatDb("phase1")
