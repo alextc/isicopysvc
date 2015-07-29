@@ -20,7 +20,7 @@ class HeartBeatAssertions(object):
         now = datetime.datetime.now()
         assert DateTimeUtils.get_total_seconds_for_timedelta(
             datetime.datetime.now() - latest_heartbeat) < HeartBeatAssertions._max_allowed_heartbeat_drift,\
-            "phase2 heartbeat is stale - unexpected. Time of check {0}, heartbeat was {1}".format(now, latest_heartbeat)
+            "phase1 heartbeat is stale - unexpected. Time of check {0}, heartbeat was {1}".format(now, latest_heartbeat)
 
     def assert_heartbeat_phase2_was_written(self):
         latest_heartbeat = self._heartbeatdb_phase2.get_heartbeat(socket.gethostname(), os.getpid())
