@@ -11,6 +11,12 @@ class AclAssertions(object):
 
     def __init__(self):
 
+        # TODO: Instead of using SIDS, create a function that would convert AD name to SID
+        # Ex. isi auth groups view --zone AD1 --sid S-1-5-21-1415853412-1264766915-3061632431-1107
+        # this converts sid to name
+        # So if config I define zone and AD group, to resolve to SID
+        # isi auth groups view --zone AD1 --group 'AD1\isi_readers'
+
         # TODO: Initialize this from config
         expected_dir_admin_ace = \
             Ace("SID:S-1-5-21-2576225250-2004976870-3728844968-1108", ["dir_gen_all"])
