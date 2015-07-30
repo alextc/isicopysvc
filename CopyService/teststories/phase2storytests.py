@@ -13,15 +13,11 @@ from testutils.aclassertions import AclAssertions
 
 class Phase2StoryTests(unittest.TestCase):
 
-    AD2_ISI_ADMINS = "S-1-5-21-2576225250-2004976870-3728844968-1108"
-    AD2_ISI_READERS = "S-1-5-21-2576225250-2004976870-3728844968-1106"
-    AD2_ISI_WRITERS = "S-1-5-21-2576225250-2004976870-3728844968-1107"
-    EXPECTED_SIDS_IN_ACL = [AD2_ISI_ADMINS, AD2_ISI_WRITERS, AD2_ISI_READERS]
-
     def setUp(self):
         self._logger = LoggerFactory().create(Phase2StoryTests.__name__)
         Cleaner().clean_phase2()
         self._heartbeat_assertions = HeartBeatAssertions()
+        self._aclAssertions = AclAssertions()
 
     def test_phase2_story(self):
         worker = Phase2Worker()
@@ -41,9 +37,7 @@ class Phase2StoryTests(unittest.TestCase):
                 Phase2WorkItemHeartBeatManager(
                     heart_beat_db, my_claimed_phase2_work_item))
 
-            AclAssertions.assert_sid_has_access_to_tree(
-                my_claimed_phase2_work_item.target_dir,
-                Phase2StoryTests.EXPECTED_SIDS_IN_ACL)
+            self._aclAssertions.assert_acl_applied(tree=my_claimed_phase2_work_item.target_dir)
 
 if __name__ == '__main__':
     unittest.main()

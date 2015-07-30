@@ -1,27 +1,52 @@
 __author__ = 'alextc'
-from isiapi.getaclcommand import GetAclCommand
 import os
+from isiapi.getaclcommand import GetAclCommand
+from isiapi.acl import Acl
+from isiapi.ace import Ace
+from log.loggerfactory import LoggerFactory
 
 
 class AclAssertions(object):
+    _logger = LoggerFactory().create("AclAssertions")
+
     def __init__(self):
-        pass
 
-    @staticmethod
-    def assert_sid_has_access_to_tree(tree, sids):
-        get_acl_on_root_command = GetAclCommand(tree)
-        ace = get_acl_on_root_command.execute()
-        for sid in sids:
-            assert sid in ace, "sid {0} is not on dir {1}. ACE was {2}".format(sid, tree, ace)
+        # TODO: Initialize this from config
+        expected_dir_admin_ace = \
+            Ace("SID:S-1-5-21-2576225250-2004976870-3728844968-1108", ["dir_gen_all"])
+        expected_dir_rw_ace = \
+            Ace("SID:S-1-5-21-2576225250-2004976870-3728844968-1107",
+                ["dir_gen_read", "dir_gen_write", "dir_gen_execute"])
+        expected_dir_ro_ace = \
+            Ace("SID:S-1-5-21-2576225250-2004976870-3728844968-1106", ["dir_gen_read", "dir_gen_execute"])
+        self._expected_dir_acl = Acl(aces=[expected_dir_ro_ace, expected_dir_admin_ace, expected_dir_rw_ace])
 
+        expected_file_admin_ace = \
+            Ace("SID:S-1-5-21-2576225250-2004976870-3728844968-1108", ["file_gen_all"])
+        expected_file_rw_ace = \
+            Ace("SID:S-1-5-21-2576225250-2004976870-3728844968-1107",
+                ["file_gen_read", "file_gen_write", "file_gen_execute"])
+        expected_file_ro_ace = \
+            Ace("SID:S-1-5-21-2576225250-2004976870-3728844968-1106", ["file_gen_read", "file_gen_execute"])
+        self._expected_file_acl = Acl(aces=[expected_file_ro_ace, expected_file_admin_ace, expected_file_rw_ace])
+
+    def assert_acl_applied(self, tree):
+        self._test_ace(tree, self._expected_dir_acl)
         for root, dirs, files in os.walk(tree, topdown=False):
             for name in files:
-                get_acl_on_file_command = GetAclCommand(os.path.join(root, name))
-                ace = get_acl_on_file_command.execute()
-                for sid in sids:
-                    assert sid in ace, "sid {0} is not on file {1}. ACE was {2}".format(sid, name, ace)
+                self._test_ace(os.path.join(root, name), self._expected_file_acl)
             for name in dirs:
-                get_acl_on_dir_command = GetAclCommand(os.path.join(root, name))
-                ace = get_acl_on_dir_command.execute()
-                for sid in sids:
-                    assert sid in ace, "sid {0} is not on dir {1}. ACE was {2}".format(sid, name, ace)
+                self._test_ace(os.path.join(root, name), self._expected_dir_acl)
+
+    @staticmethod
+    def _test_ace(fs_object, expected_acl):
+        get_acl_command = GetAclCommand(fs_object)
+        raw_acl = get_acl_command.execute()
+        assert raw_acl, "Failed to get raw_acl from ISI API"
+        print raw_acl
+        sut = Acl(get_acl_raw_output=raw_acl)
+
+        AclAssertions._logger.debug("About to compare ACLs")
+        AclAssertions._logger.debug("Applied ACL:\n{0}\nExpected ACL:\n{1}".format(sut, expected_acl))
+        assert sut == expected_acl, \
+                    "Applied ACL:\n{0}\n did not match the expected ACL:\n{1}".format(sut, expected_acl)
